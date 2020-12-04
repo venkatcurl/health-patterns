@@ -78,7 +78,7 @@ nifi:
           targetPort: 12667
   extraContainers:
     - name: post-start-setup
-      image: praqma/network-multitool
+      image:  dlranum/ingestionimage
       imagePullPolicy: IfNotPresent
       command:
         - bash
@@ -130,6 +130,15 @@ nifi:
           bash -c /scripts/initialize-reporting-task.sh
 
           echo "done running nifi init script"
+
+          echo "downloading nifi setup python script..."
+          curl -k --url https://raw.github.ibm.com/integrationsquad/integration-tools/master/setupFlow.py?token=AABLLYDWZTSEGYIS6U3NPMC72OYDI -o /scripts/setupFlow.py
+          echo "done downloading nifi setup python script"
+
+          echo "running setup script..."
+          python3 /scripts/setupFlow.py http://ingestion-nifi-0:8080/
+          echo "done with setup script..."
+
           echo "starting wait loop so container does not exit"
           while true; do sleep 10; done
       volumeMounts:
