@@ -16,8 +16,11 @@
 
 import json
 
+from fhir.resources.bundle import Bundle
+from fhir.resources.bundle import BundleEntry, BundleEntryRequest
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.coding import Coding
+from fhir.resources.condition import Condition
 from fhir.resources.extension import Extension
 from fhir.resources.medicationstatement import MedicationStatement
 
@@ -199,41 +202,137 @@ def append_derived_by_nlp_extension(resource):  # formerly create_derived_resour
 
         Updated Resource:
         >>> print(resource.json(indent=2))
+        {
+          "extension": [
             {
-              "extension": [
-                {
-                  "url": "http://ibm.com/fhir/cdm/StructureDefinition/category",
-                  "valueCodeableConcept": {
-                    "coding": [
-                      {
-                        "code": "natural-language-processing",
-                        "display": "NLP",
-                        "system": "http://ibm.com/fhir/cdm/CodeSystem/insight-category-code-system"
-                      }
-                    ],
-                    "text": "NLP"
-                  }
-                }
-              ],
-              "medicationCodeableConcept": {
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/category",
+              "valueCodeableConcept": {
                 "coding": [
                   {
-                    "code": "C0025598",
-                    "display": "Metformin",
-                    "system": "http://terminology.hl7.org/CodeSystem/umls"
+                    "code": "natural-language-processing",
+                    "display": "NLP",
+                    "system": "http://ibm.com/fhir/cdm/CodeSystem/insight-category-code-system"
                   }
                 ],
-                "text": "Metformin"
-              },
-              "status": "unknown",
-              "subject": {
-                "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
-              },
-              "resourceType": "MedicationStatement"
+                "text": "NLP"
+              }
             }
+          ],
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "code": "C0025598",
+                "display": "Metformin",
+                "system": "http://terminology.hl7.org/CodeSystem/umls"
+              }
+            ],
+            "text": "Metformin"
+          },
+          "status": "unknown",
+          "subject": {
+            "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
+          },
+          "resourceType": "MedicationStatement"
+        }
     """
     classification_ext = create_derived_by_nlp_extension()
     if resource.extension is None:
         resource.extension = [classification_ext]
     else:
         resource.extension.append(classification_ext)
+
+
+# fhir_resource_action --> list of resource(s) with their request type ('POST' or 'PUT') and url
+#                    example: [[resource1, 'POST', 'url1'], [resource2, 'PUT', 'url2']]
+def create_transaction_bundle(resource_action_list):
+    """Creates a bundle from a list of resource tuples
+
+        Args:
+            resource_action_list - list of tuples of the form (resource, method_str, url_str)
+
+        Example:
+        
+        Build input list:
+        >>> condition1 = Condition.parse_obj(json.loads(
+        ... '''
+        ... {
+        ...     "code": {
+        ...         "text": "Diabetes Mellitus, Insulin-Dependent"
+        ...     },
+        ...     "subject": {
+        ...         "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
+        ...     },
+        ...     "resourceType": "Condition"
+        ... }'''))
+        
+        >>> condition2 = Condition.parse_obj(json.loads(
+        ... '''
+        ... {
+        ...     "code": {
+        ...         "text": "Something else"
+        ...     },
+        ...     "subject": {
+        ...         "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
+        ...     },
+        ...     "resourceType": "Condition"
+        ... }'''))
+        
+        Result:
+        >>> bundle = create_transaction_bundle([(condition1, 'POST', 'http://url1'),
+        ...                                     (condition2, 'POST', 'http://url2')])
+        >>> print(bundle.json(indent=2))
+        {
+          "entry": [
+            {
+              "request": {
+                "method": "POST",
+                "url": "http://url1"
+              },
+              "resource": {
+                "code": {
+                  "text": "Diabetes Mellitus, Insulin-Dependent"
+                },
+                "subject": {
+                  "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
+                },
+                "resourceType": "Condition"
+              }
+            },
+            {
+              "request": {
+                "method": "POST",
+                "url": "http://url2"
+              },
+              "resource": {
+                "code": {
+                  "text": "Something else"
+                },
+                "subject": {
+                  "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
+                },
+                "resourceType": "Condition"
+              }
+            }
+          ],
+          "type": "transaction",
+          "resourceType": "Bundle"
+        }
+        
+        
+    """
+    bundle = Bundle.construct()
+    bundle.type = "transaction"
+    bundle.entry = []
+
+    for resource, request_type, url in resource_action_list:
+        bundle_entry = BundleEntry.construct()
+        bundle_entry.resource = resource
+        request = BundleEntryRequest.parse_obj(
+            {
+                "method": request_type,
+                "url": url
+            })
+        bundle_entry.request = request
+        bundle.entry.append(bundle_entry)
+
+    return bundle
