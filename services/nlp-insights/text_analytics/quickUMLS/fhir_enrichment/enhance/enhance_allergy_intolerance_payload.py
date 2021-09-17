@@ -1,8 +1,10 @@
 import logging
 
 from fhir.resources.allergyintolerance import AllergyIntolerance
-from text_analytics.insights.add_insights_allergy import update_allergy_with_insights
-from text_analytics.insights.text_adjustments import adjust_allergy_text
+
+from text_analytics.quickUMLS.fhir_enrichment.insights.add_insights_allergy import update_allergy_with_insights
+from text_analytics.quickUMLS.fhir_enrichment.insights.text_adjustments import adjust_allergy_text
+
 
 logger = logging.getLogger()
 

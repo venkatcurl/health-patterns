@@ -1,6 +1,6 @@
 from fhir.resources.extension import Extension
-from text_analytics.insights import insight_constants
-from text_analytics.utils import fhir_object_utils
+from text_analytics.quickUMLS.fhir_enrichment.insights import insight_constants
+from text_analytics.quickUMLS.fhir_enrichment.utils import fhir_object_utils
 
 
 def update_allergy_with_insights(nlp, allergy, nlp_results):

@@ -2,8 +2,8 @@ from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.condition import Condition
 from fhir.resources.extension import Extension
 
-from text_analytics.insights import insight_constants
-from text_analytics.utils import fhir_object_utils
+from text_analytics.quickUMLS.fhir_enrichment.insights import insight_constants
+from text_analytics.quickUMLS.fhir_enrichment.utils import fhir_object_utils
 
 
 def _build_resource(nlp, diagnostic_report, nlp_output):

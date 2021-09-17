@@ -10,7 +10,7 @@ from fhir.resources.extension import Extension
 from fhir.resources.identifier import Identifier
 from fhir.resources.meta import Meta
 from fhir.resources.reference import Reference
-from text_analytics.insights import insight_constants
+from text_analytics.quickUMLS.fhir_enrichment.insights import insight_constants
 
 
 def create_coding(system, code, display=None):

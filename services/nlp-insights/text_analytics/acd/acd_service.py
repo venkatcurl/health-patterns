@@ -11,11 +11,10 @@ from fhir.resources.timing import Timing
 from ibm_cloud_sdk_core.authenticators.iam_authenticator import IAMAuthenticator
 from ibm_whcs_sdk import annotator_for_clinical_data as acd
 
+import fhir_object_utils
 from text_analytics.abstract_nlp_service import NLPService
-from text_analytics.enhance import *
-from text_analytics.insights import insight_constants
-from text_analytics.insights.add_insights_medication import create_insight
-from text_analytics.utils import fhir_object_utils
+from text_analytics.acd.fhir_enrichment.insights import insight_constants
+from text_analytics.acd.fhir_enrichment.insights.add_insights_medication import create_insight
 
 
 logger = logging.getLogger()
@@ -76,7 +75,11 @@ class ACDService(NLPService):
             med_statement.medicationCodeableConcept = codeable_concept
             codeable_concept.coding = []
 
-        fhir_object_utils.add_codings_drug(acd_drug, acd_drug_name, med_statement.medicationCodeableConcept, insight_id, insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)
+        fhir_object_utils.add_codings_drug(acd_drug,
+                                           acd_drug_name,
+                                           med_statement.medicationCodeableConcept,
+                                           insight_id,
+                                           insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)
 
         if hasattr(medication, "administration"):
             if med_statement.dosage is None:
@@ -126,10 +129,16 @@ class ACDService(NLPService):
                 if code is not None and display is not None:
                     timing = Timing.construct()
                     timing_codeable_concept = CodeableConcept.construct()
-                    timing_codeable_concept.coding = [fhir_object_utils.create_coding(insight_constants.TIMING_URL, code, display)]
+                    timing_codeable_concept.coding = [
+                        fhir_object_utils.create_coding(
+                            insight_constants.TIMING_URL,
+                            code,
+                            display)
+                        ]
                     timing_codeable_concept.text = frequency
                     timing.code = timing_codeable_concept
                     dose.timing = timing
 
-            dose.extension = [fhir_object_utils.create_insight_reference(insight_id, insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)]
+            dose.extension = [fhir_object_utils.create_insight_reference(insight_id,
+                                                                         insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)]
             med_statement.dosage.append(dose)

@@ -1,13 +1,10 @@
 import logging
 
 from fhir.resources.codeableconcept import CodeableConcept
-from fhir.resources.dosage import Dosage, DosageDoseAndRate
 from fhir.resources.extension import Extension
 from fhir.resources.medicationstatement import MedicationStatement
-from fhir.resources.quantity import Quantity
-from fhir.resources.timing import Timing
-from text_analytics.insights import insight_constants
-from text_analytics.utils import fhir_object_utils
+from text_analytics.quickUMLS.fhir_enrichment.insights import insight_constants
+from text_analytics.quickUMLS.fhir_enrichment.utils import fhir_object_utils
 
 logger = logging.getLogger()
 
@@ -58,7 +55,8 @@ def create_insight(concept, nlp, nlp_output, diagnostic_report, build_resource, 
     build_resource(med_statement, concept, insight_id)
     insight = Extension.construct()
     insight.url = insight_constants.INSIGHT_INSIGHT_ENTRY_URL
-    insight_id_ext = fhir_object_utils.create_insight_extension(insight_id, insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)
+    insight_id_ext = fhir_object_utils.create_insight_extension(insight_id,
+                                                                insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)
     insight.extension = [insight_id_ext]
     insight_detail = fhir_object_utils.create_insight_detail_extension(nlp_output)
     insight.extension.append(insight_detail)
@@ -70,6 +68,7 @@ def create_insight(concept, nlp, nlp_output, diagnostic_report, build_resource, 
     result_extension = med_statement.meta.extension[0]
     result_extension.extension.append(insight)
     return med_statements_found, med_statements_insight_counter
+
 
 def _build_resource_data(med_statement, concept, insight_id):
     if med_statement.status is None:
@@ -83,7 +82,12 @@ def _build_resource_data(med_statement, concept, insight_id):
         med_statement.medicationCodeableConcept = codeable_concept
         codeable_concept.coding = []
 
-    fhir_object_utils.add_codings_drug(concept, drug, med_statement.medicationCodeableConcept, insight_id, insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)
+    fhir_object_utils.add_codings_drug(concept,
+                                       drug,
+                                       med_statement.medicationCodeableConcept,
+                                       insight_id,
+                                       insight_constants.INSIGHT_ID_UNSTRUCTURED_SYSTEM)
+
 
 def create_med_statements_from_insights(nlp, diagnostic_report, nlp_output):
     med_statements = _build_resource(nlp, diagnostic_report, nlp_output)
