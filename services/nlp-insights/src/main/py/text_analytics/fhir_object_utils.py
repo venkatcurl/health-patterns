@@ -14,17 +14,17 @@
 
 """Utilities for manipulating FHIR objects"""
 
-import json
+import json # noqa: F401 pylint: disable=unused-import
 
 from fhir.resources.bundle import Bundle
 from fhir.resources.bundle import BundleEntry, BundleEntryRequest
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.coding import Coding
-from fhir.resources.condition import Condition
+from fhir.resources.condition import Condition  # noqa: F401 pylint: disable=unused-import
 from fhir.resources.extension import Extension
-from fhir.resources.medicationstatement import MedicationStatement
+from fhir.resources.medicationstatement import MedicationStatement  # noqa: F401 pylint: disable=unused-import
 
-import insight_constants
+import text_analytics.insight_constants as insight_constants  # noqa: F401 pylint: disable=unused-import
 
 
 # FIXME: former create_coding_system_entry_with_extension
@@ -242,8 +242,6 @@ def append_derived_by_nlp_extension(resource):  # formerly create_derived_resour
         resource.extension.append(classification_ext)
 
 
-# fhir_resource_action --> list of resource(s) with their request type ('POST' or 'PUT') and url
-#                    example: [[resource1, 'POST', 'url1'], [resource2, 'PUT', 'url2']]
 def create_transaction_bundle(resource_action_list):
     """Creates a bundle from a list of resource tuples
 
@@ -251,7 +249,7 @@ def create_transaction_bundle(resource_action_list):
             resource_action_list - list of tuples of the form (resource, method_str, url_str)
 
         Example:
-        
+
         Build input list:
         >>> condition1 = Condition.parse_obj(json.loads(
         ... '''
@@ -264,7 +262,7 @@ def create_transaction_bundle(resource_action_list):
         ...     },
         ...     "resourceType": "Condition"
         ... }'''))
-        
+
         >>> condition2 = Condition.parse_obj(json.loads(
         ... '''
         ... {
@@ -276,7 +274,7 @@ def create_transaction_bundle(resource_action_list):
         ...     },
         ...     "resourceType": "Condition"
         ... }'''))
-        
+
         Result:
         >>> bundle = create_transaction_bundle([(condition1, 'POST', 'http://url1'),
         ...                                     (condition2, 'POST', 'http://url2')])
@@ -317,8 +315,8 @@ def create_transaction_bundle(resource_action_list):
           "type": "transaction",
           "resourceType": "Bundle"
         }
-        
-        
+
+
     """
     bundle = Bundle.construct()
     bundle.type = "transaction"

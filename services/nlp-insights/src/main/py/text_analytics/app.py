@@ -24,10 +24,10 @@ nlp_services_dict = {}
 
 def setup_config_dir():
     pvPath = os.path.join(os.getcwd(), '..', 'mnt', 'data')
-    localPath = os.path.join('text_analytics', 'configs')
+    localPath = os.path.join('test_text_analytics', 'configs')
     if os.access(pvPath, os.W_OK):
         try:
-            defaultJsonFile = open('text_analytics/configs/default', 'r')
+            defaultJsonFile = open('test_text_analytics/configs/default', 'r')
             defaultJson = defaultJsonFile.read()
             defaultPVFile = open(pvPath + '/default', 'w')
             defaultPVFile.write(defaultJson)
