@@ -56,7 +56,7 @@ CLASSIFICATION_DERIVED_CODE = "natural-language-processing"
 CLASSIFICATION_DERIVED_DISPLAY = "NLP"
 CLASSIFICATION_DERIVED_SYSTEM = "http://ibm.com/fhir/cdm/CodeSystem/insight-category-code-system"
 
-INSIGHT_ID_SYSTEM_URN = "urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0"
+# INSIGHT_ID_SYSTEM_URN = "urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0"
 
 CONFIDENCE_SCORE_EXPLICIT = "Explicit Score"
 CONFIDENCE_SCORE_PATIENT_REPORTED = "Patient Reported Score"

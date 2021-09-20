@@ -18,10 +18,12 @@ from fhir.resources.medicationstatement import MedicationStatement
 from fhir.resources.quantity import Quantity
 from fhir.resources.timing import Timing
 
-from acd.fhir_enrichment.insights import insight_constants
-from acd.fhir_enrichment.utils import acd_utils
-from acd.fhir_enrichment.utils import enrichment_constants
-from acd.fhir_enrichment.utils import fhir_object_utils
+from text_analytics import fhir_object_utils
+from text_analytics import insight_constants
+from text_analytics.acd.fhir_enrichment.utils import acd_utils
+from text_analytics.acd.fhir_enrichment.utils import enrichment_constants
+from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
+
 
 logger = logging.getLogger('whpa-cdp-lib-fhir-enrichment')
 
@@ -61,13 +63,13 @@ def create_med_statements_from_insights(diagnostic_report, acd_output):
                 else:
                     insight_id_num = med_statements_insight_counter[cui] + 1
 
-                insight_ext = fhir_object_utils.add_resource_meta(med_statement)
+                insight_ext = fhir_object_utils.create_insight_extension_in_meta(med_statement)
 
                 med_statements_insight_counter[cui] = insight_id_num
                 insight_id_string = "insight-" + str(insight_id_num)
                 _build_resource_data(med_statement, medInd, insight_id_string)
 
-                insight_span_ext = fhir_object_utils.create_unstructured_insight_detail(insight_ext,
+                insight_span_ext = acd_fhir_utils.create_unstructured_insight_detail(insight_ext,
                                                                                         insight_id_string,
                                                                                         acd_output,
                                                                                         diagnostic_report,
@@ -75,7 +77,7 @@ def create_med_statements_from_insights(diagnostic_report, acd_output):
                 # Add confidences
                 insight_model_data = attr.insight_model_data
                 if insight_model_data is not None:
-                    fhir_object_utils.add_medication_confidences(insight_span_ext.extension, insight_model_data)
+                    acd_fhir_utils.add_medication_confidences(insight_span_ext.extension, insight_model_data)
 
     if len(med_statements_found) == 0:
         return None
@@ -83,7 +85,7 @@ def create_med_statements_from_insights(diagnostic_report, acd_output):
         med_statements = list(med_statements_found.values())
         for med_statement in med_statements:
             med_statement.subject = diagnostic_report.subject
-            fhir_object_utils.create_derived_resource_extension(med_statement)
+            fhir_object_utils.append_derived_by_nlp_extension(med_statement)
     return med_statements
 
 
@@ -108,7 +110,7 @@ def _build_resource_data(med_statement, acd_medication, insight_id):
         med_statement.medicationCodeableConcept = codeable_concept
         codeable_concept.coding = []
 
-    fhir_object_utils.add_codings_drug(acd_drug, med_statement.medicationCodeableConcept)
+    acd_fhir_utils.add_codings_drug(acd_drug, med_statement.medicationCodeableConcept)
 
     if hasattr(acd_medication, "administration"):
         # Dosage
@@ -166,8 +168,9 @@ def _build_resource_data(med_statement, acd_medication, insight_id):
                     timing = Timing.construct()
                     timing_codeable_concept = CodeableConcept.construct()
                     timing_codeable_concept.coding = [
-                        fhir_object_utils.create_coding_with_display(insight_constants.TIMING_URL,
-                                                                     code, display)
+                        fhir_object_utils.create_coding(insight_constants.TIMING_URL,
+                                                        code,
+                                                        display)
                         ]
                     timing_codeable_concept.text = frequency
                     timing.code = timing_codeable_concept

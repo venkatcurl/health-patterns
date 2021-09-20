@@ -11,9 +11,12 @@
 # ******************************************************************************/
 
 from fhir.resources.extension import Extension
-from acd.fhir_enrichment.insights import insight_constants
-from acd.fhir_enrichment.utils import acd_utils
-from acd.fhir_enrichment.utils import fhir_object_utils
+
+from text_analytics import fhir_object_utils
+from text_analytics import insight_constants
+from text_analytics.acd.fhir_enrichment.utils import acd_utils
+from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
+from text_analytics.acd.insight_constants import INSIGHT_ID_SYSTEM_URN
 
 
 # Parameters:
@@ -45,21 +48,21 @@ def update_with_insights(ai_results, fhir_resource, conceptType):
                     if codeable_concept.coding is None:
                         codeable_concept.coding = []
                     concept = acd_utils.get_source_for_attribute(attr, concepts)
-                    fhir_object_utils.add_codings_with_extension(concept, codeable_concept)
+                    acd_fhir_utils.add_codings_with_extension(concept, codeable_concept)
 
                     # Create meta if any insights were added
-                    insight_ext = fhir_object_utils.add_resource_meta(fhir_resource)
-                    insight_id_ext = fhir_object_utils.create_insight_id_extension(insight_id, insight_constants.INSIGHT_ID_SYSTEM_URN)
+                    insight_ext = fhir_object_utils.create_insight_extension_in_meta(fhir_resource)
+                    insight_id_ext = fhir_object_utils.create_insight_id_extension(insight_id, INSIGHT_ID_SYSTEM_URN)
                     insight_ext.extension = [insight_id_ext]
 
                     # Create insight detail for resource meta extension
                     insight_detail = Extension.construct()
                     insight_detail.url = insight_constants.INSIGHT_DETAIL_URL
                     # Save acd result
-                    evaluated_output_ext = fhir_object_utils.create_ACD_output_extension(acd_result)
+                    evaluated_output_ext = acd_fhir_utils.create_ACD_output_extension(acd_result)
                     insight_detail.extension = [evaluated_output_ext]
                     # Add reference path to insight added in resource
-                    reference_path_ext = fhir_object_utils.create_reference_path_extension(fhir_path)
+                    reference_path_ext = acd_fhir_utils.create_reference_path_extension(fhir_path)
                     insight_detail.extension.append(reference_path_ext)
 
                     insight_ext.extension.append(insight_detail)

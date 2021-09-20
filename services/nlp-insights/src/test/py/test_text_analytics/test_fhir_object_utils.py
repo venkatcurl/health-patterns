@@ -23,10 +23,10 @@ import text_analytics.fhir_object_utils
 
 class TestFhirObjUtils(unittest.TestCase):
     """Test the FHIR object utilities
-    
+
        These are tests other than documentation tests
     """
-    pass
+
     # def test_something(self):
     #    pass
 
@@ -46,4 +46,3 @@ def load_tests(loader, tests, pattern):
 
 if __name__ == "__main__":
     unittest.main()
-
