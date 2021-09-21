@@ -25,7 +25,7 @@ from text_analytics.acd.fhir_enrichment.utils import enrichment_constants
 from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
 
 
-logger = logging.getLogger('whpa-cdp-lib-fhir-enrichment')
+logger = logging.getLogger("whpa-cdp-lib-fhir-enrichment")
 
 
 def _create_med_statement_from_template():
@@ -35,10 +35,7 @@ def _create_med_statement_from_template():
     # TODO: investigate a better way of doing this, ie can we turn off validation temporarily
     med_statement_template = {
         "status": "unknown",
-        "medicationCodeableConcept": {
-
-            "text": "template"
-        }
+        "medicationCodeableConcept": {"text": "template"},
     }
     med_statement = MedicationStatement.construct(**med_statement_template)
     return med_statement
@@ -48,7 +45,9 @@ def create_med_statements_from_insights(diagnostic_report, acd_output):
     # build insight set from ACD output
     acd_attrs = acd_output.attribute_values
     med_statements_found = {}  # key is UMLS ID, value is the FHIR resource
-    med_statements_insight_counter = {}  # key is UMLS ID, value is the current insight_num
+    med_statements_insight_counter = (
+        {}
+    )  # key is UMLS ID, value is the current insight_num
     if acd_attrs is not None:
         acd_medicationInds = acd_output.medication_ind
         for attr in acd_attrs:
@@ -63,21 +62,27 @@ def create_med_statements_from_insights(diagnostic_report, acd_output):
                 else:
                     insight_id_num = med_statements_insight_counter[cui] + 1
 
-                insight_ext = fhir_object_utils.create_insight_extension_in_meta(med_statement)
+                insight_ext = fhir_object_utils.create_insight_extension_in_meta(
+                    med_statement
+                )
 
                 med_statements_insight_counter[cui] = insight_id_num
                 insight_id_string = "insight-" + str(insight_id_num)
                 _build_resource_data(med_statement, medInd, insight_id_string)
 
-                insight_span_ext = acd_fhir_utils.create_unstructured_insight_detail(insight_ext,
-                                                                                        insight_id_string,
-                                                                                        acd_output,
-                                                                                        diagnostic_report,
-                                                                                        medInd)
+                insight_span_ext = acd_fhir_utils.create_unstructured_insight_detail(
+                    insight_ext,
+                    insight_id_string,
+                    acd_output,
+                    diagnostic_report,
+                    medInd,
+                )
                 # Add confidences
                 insight_model_data = attr.insight_model_data
                 if insight_model_data is not None:
-                    acd_fhir_utils.add_medication_confidences(insight_span_ext.extension, insight_model_data)
+                    acd_fhir_utils.add_medication_confidences(
+                        insight_span_ext.extension, insight_model_data
+                    )
 
     if len(med_statements_found) == 0:
         return None
@@ -92,7 +97,7 @@ def create_med_statements_from_insights(diagnostic_report, acd_output):
 def _build_resource_data(med_statement, acd_medication, insight_id):
     if med_statement.status is None:
         # hard code to unknown for now
-        med_statement.status = 'unknown'
+        med_statement.status = "unknown"
 
     # TODO: may need to reconsider hard coding into the first drug and first name entry
     # Currently we have only seen medication entries looking like this,
@@ -103,7 +108,10 @@ def _build_resource_data(med_statement, acd_medication, insight_id):
     # Should be template on the first occurrance found of the drug
     # Future occurrances of this drug in the same document will not be set to template
     # First instance will be dict until we create the CodeableConcept the first time
-    if type(med_statement.medicationCodeableConcept) is dict and med_statement.medicationCodeableConcept.get("text") == "template":
+    if (
+        type(med_statement.medicationCodeableConcept) is dict
+        and med_statement.medicationCodeableConcept.get("text") == "template"
+    ):
         codeable_concept = CodeableConcept.construct()
         # TODO: investigate in construction if we should be using drugSurfaceForm or drugNormalizedName
         codeable_concept.text = acd_drug.get("drugSurfaceForm")
@@ -120,10 +128,10 @@ def _build_resource_data(med_statement, acd_medication, insight_id):
             dose_rate = DosageDoseAndRate.construct()
             dose_amount = None
             dose_units = None
-            if ' ' in dose_with_units:
+            if " " in dose_with_units:
                 # for now need parse, assuming units is after the first space
-                dose_info = dose_with_units.split(' ')
-                amount = dose_info[0].replace(',', '')  # Remove any commas, e.g. 1,000
+                dose_info = dose_with_units.split(" ")
+                amount = dose_info[0].replace(",", "")  # Remove any commas, e.g. 1,000
                 try:
                     dose_amount = float(amount)
                 except OverflowError:
@@ -132,7 +140,9 @@ def _build_resource_data(med_statement, acd_medication, insight_id):
                     dose_units = dose_info[1]
             else:
                 # if no space, assume only value
-                amount = dose_with_units.replace(',', '')  # Remove any commas, e.g. 1,000
+                amount = dose_with_units.replace(
+                    ",", ""
+                )  # Remove any commas, e.g. 1,000
                 try:
                     dose_amount = float(amount)
                 except OverflowError:
@@ -157,21 +167,21 @@ def _build_resource_data(med_statement, acd_medication, insight_id):
                 display = None
 
                 # TODO: Create function to map from ACD frequency to possible FHIR dose timings
-                if frequency in ['Q AM', 'Q AM.', 'AM']:
-                    code = 'AM'
-                    display = 'AM'
-                elif frequency in ['Q PM', 'Q PM.', 'PM']:
-                    code = 'PM'
-                    display = 'PM'
+                if frequency in ["Q AM", "Q AM.", "AM"]:
+                    code = "AM"
+                    display = "AM"
+                elif frequency in ["Q PM", "Q PM.", "PM"]:
+                    code = "PM"
+                    display = "PM"
 
                 if code is not None and display is not None:
                     timing = Timing.construct()
                     timing_codeable_concept = CodeableConcept.construct()
                     timing_codeable_concept.coding = [
-                        fhir_object_utils.create_coding(insight_constants.TIMING_URL,
-                                                        code,
-                                                        display)
-                        ]
+                        fhir_object_utils.create_coding(
+                            insight_constants.TIMING_URL, code, display
+                        )
+                    ]
                     timing_codeable_concept.text = frequency
                     timing.code = timing_codeable_concept
                     dose.timing = timing

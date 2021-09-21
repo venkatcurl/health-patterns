@@ -11,9 +11,14 @@
 # ******************************************************************************/
 
 import logging
-from acd.fhir_enrichment.utils.enrichment_constants import ALLERGEN, CONDITION, MANIFESTATION, VACCINE
+from text_analytics.acd.fhir_enrichment.utils.enrichment_constants import (
+    ALLERGEN,
+    CONDITION,
+    MANIFESTATION,
+    VACCINE,
+)
 
-logger = logging.getLogger('whpa-cdp-lib-fhir-enrichment')
+logger = logging.getLogger("whpa-cdp-lib-fhir-enrichment")
 
 
 # Returns a list of tuples containing
@@ -33,14 +38,21 @@ def allergy_intolerance_fields_of_interest(allergy_intolerance):
     #    AllergyIntolerance.reaction[].manifestation[].text
     if allergy_intolerance.code.text is not None:
         fhir_path = "AllergyIntolerance.code"
-        fields_of_interest.append((ALLERGEN, allergy_intolerance.code, fhir_path, allergy_intolerance.code.text))
+        fields_of_interest.append(
+            (
+                ALLERGEN,
+                allergy_intolerance.code,
+                fhir_path,
+                allergy_intolerance.code.text,
+            )
+        )
 
     if allergy_intolerance.reaction is not None:
         reaction_counter = 0
         for reaction in allergy_intolerance.reaction:
             manifestation_counter = 0
             for mf in reaction.manifestation:
-                fhir_path = f'AllergyIntolerance.reaction[{reaction_counter}].manifestation[{manifestation_counter}]'
+                fhir_path = f"AllergyIntolerance.reaction[{reaction_counter}].manifestation[{manifestation_counter}]"
                 fields_of_interest.append((MANIFESTATION, mf, fhir_path, mf.text))
                 manifestation_counter += 1
             reaction_counter += 1
@@ -57,7 +69,9 @@ def condition_fields_of_interest(condition):
     fields_of_interest = []
     if condition.code.text is not None:
         fhir_path = "Condition.code"
-        fields_of_interest.append((CONDITION, condition.code, fhir_path, condition.code.text))
+        fields_of_interest.append(
+            (CONDITION, condition.code, fhir_path, condition.code.text)
+        )
 
     return fields_of_interest
 
@@ -71,6 +85,13 @@ def immunization_fields_of_interest(immunization):
     fields_of_interest = []
     if immunization.vaccineCode.text is not None:
         fhir_path = "Immunization.vaccineCode"
-        fields_of_interest.append((VACCINE, immunization.vaccineCode, fhir_path, immunization.vaccineCode.text))
+        fields_of_interest.append(
+            (
+                VACCINE,
+                immunization.vaccineCode,
+                fhir_path,
+                immunization.vaccineCode.text,
+            )
+        )
 
     return fields_of_interest

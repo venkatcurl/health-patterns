@@ -25,13 +25,14 @@ from text_analytics.fhir_object_utils import create_insight_id_extension
 from text_analytics.fhir_object_utils import create_insight_span_extension
 
 
-def create_report_reference_extension(diagnostic_report):
-    based_on_extension = Extension.construct()
-    based_on_extension.url = insight_constants.INSIGHT_BASED_ON_URL
-    reference = Reference.construct()
-    reference.reference = diagnostic_report.resource_type + "/" + diagnostic_report.id
-    based_on_extension.valueReference = reference
-    return based_on_extension
+# Now create_reference_to_resource_extension
+#def create_report_reference_extension(diagnostic_report):
+#    based_on_extension = Extension.construct()
+#    based_on_extension.url = insight_constants.INSIGHT_BASED_ON_URL
+#    reference = Reference.construct()
+#    reference.reference = diagnostic_report.resource_type + "/" + diagnostic_report.id
+#    based_on_extension.valueReference = reference
+#    return based_on_extension
 
 
 # Creates extension to hold the NLP output (ACD results).
@@ -61,11 +62,11 @@ def create_ACD_output_extension(acd_output):
 
 # Creates extension to hold the path in the resource for an insight.
 # acd path only
-def create_reference_path_extension(path):
-    reference_ext = Extension.construct()
-    reference_ext.url = insight_constants.INSIGHT_REFERENCE_PATH_URL
-    reference_ext.valueString = path
-    return reference_ext
+#def create_reference_path_extension(path):
+#    reference_ext = Extension.construct()
+#    reference_ext.url = insight_constants.INSIGHT_REFERENCE_PATH_URL
+#    reference_ext.valueString = path
+#    return reference_ext
 
 
 # ACD will often return multiple codes from one system in a comma delimited list.
@@ -115,19 +116,19 @@ def add_codings_with_extension(acd_concept, codeable_concept):
         #    coding.display = concept.preferred_name
         #    codeable_concept.coding.append(coding)
     if acd_concept.snomed_concept_id is not None:
-        create_coding_entries_with_extension(codeable_concept, insight_constants.SNOMED_URL, concept.snomed_concept_id)
-    if concept.nci_code is not None:
-        create_coding_entries_with_extension(codeable_concept, insight_constants.NCI_URL, concept.nci_code)
-    if concept.loinc_id is not None:
-        create_coding_entries_with_extension(codeable_concept, insight_constants.LOINC_URL, concept.loinc_id)
-    if concept.mesh_id is not None:
-        create_coding_entries_with_extension(codeable_concept, insight_constants.MESH_URL, concept.mesh_id)
-    if concept.icd9_code is not None:
-        create_coding_entries_with_extension(codeable_concept, insight_constants.ICD9_URL, concept.icd9_code)
-    if concept.icd10_code is not None:
-        create_coding_entries_with_extension(codeable_concept, insight_constants.ICD10_URL, concept.icd10_code)
-    if concept.rx_norm_id is not None:
-        create_coding_entries_with_extension(codeable_concept, insight_constants.RXNORM_URL, concept.rx_norm_id)
+        create_coding_entries_with_extension(codeable_concept, insight_constants.SNOMED_URL, acd_concept.snomed_concept_id)
+    if acd_concept.nci_code is not None:
+        create_coding_entries_with_extension(codeable_concept, insight_constants.NCI_URL, acd_concept.nci_code)
+    if acd_concept.loinc_id is not None:
+        create_coding_entries_with_extension(codeable_concept, insight_constants.LOINC_URL, acd_concept.loinc_id)
+    if acd_concept.mesh_id is not None:
+        create_coding_entries_with_extension(codeable_concept, insight_constants.MESH_URL, acd_concept.mesh_id)
+    if acd_concept.icd9_code is not None:
+        create_coding_entries_with_extension(codeable_concept, insight_constants.ICD9_URL, acd_concept.icd9_code)
+    if acd_concept.icd10_code is not None:
+        create_coding_entries_with_extension(codeable_concept, insight_constants.ICD10_URL, acd_concept.icd10_code)
+    if acd_concept.rx_norm_id is not None:
+        create_coding_entries_with_extension(codeable_concept, insight_constants.RXNORM_URL, acd_concept.rx_norm_id)
 
 
 # Adds codes from the concept to the codeable_concept.
@@ -252,7 +253,7 @@ def create_unstructured_insight_detail(insight_ext, insight_id_string, acd_outpu
     evaluated_output_ext = create_ACD_output_extension(acd_output)
     insight_detail.extension = [evaluated_output_ext]
     # Create reference to unstructured report
-    report_reference_ext = create_report_reference_extension(diagnostic_report)
+    report_reference_ext = fhir_object_utils.create_reference_to_resource_extension(diagnostic_report)
     insight_detail.extension.append(report_reference_ext)
 
     # Unstructured results extension

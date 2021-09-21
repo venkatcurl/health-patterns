@@ -13,16 +13,19 @@
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.condition import Condition
 
-from acd.fhir_enrichment.utils import acd_utils
-from acd.fhir_enrichment.utils import enrichment_constants
-from acd.fhir_enrichment.utils import fhir_object_utils
+from text_analytics import fhir_object_utils
+from text_analytics.acd.fhir_enrichment.utils import acd_utils
+from text_analytics.acd.fhir_enrichment.utils import enrichment_constants
+from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
 
 
 def create_conditions_from_insights(diagnostic_report, acd_output):
     # build insight set from ACD output
     acd_attrs = acd_output.attribute_values
-    conditions_found = {}            # key is UMLS ID, value is the FHIR resource
-    conditions_insight_counter = {}  # key is UMLS ID, value is the current insight_id_num
+    conditions_found = {}  # key is UMLS ID, value is the FHIR resource
+    conditions_insight_counter = (
+        {}
+    )  # key is UMLS ID, value is the current insight_id_num
     if acd_attrs is not None:
         acd_concepts = acd_output.concepts
         for attr in acd_attrs:
@@ -37,29 +40,31 @@ def create_conditions_from_insights(diagnostic_report, acd_output):
                 else:
                     insight_id_num = conditions_insight_counter[cui] + 1
 
-                insight_ext = fhir_object_utils.add_resource_meta(condition)
+                insight_ext = fhir_object_utils.create_insight_extension_in_meta(
+                    condition
+                )
 
                 conditions_insight_counter[cui] = insight_id_num
                 insight_id_string = "insight-" + str(insight_id_num)
                 _build_resource_data(condition, concept)
 
-                insight_span_ext = fhir_object_utils.create_unstructured_insight_detail(insight_ext,
-                                                                                        insight_id_string,
-                                                                                        acd_output,
-                                                                                        diagnostic_report,
-                                                                                        attr)
+                insight_span_ext = acd_fhir_utils.create_unstructured_insight_detail(
+                    insight_ext, insight_id_string, acd_output, diagnostic_report, attr
+                )
                 # Add confidences
                 insight_model_data = attr.insight_model_data
                 if insight_model_data is not None:
-                    fhir_object_utils.add_diagnosis_confidences(insight_span_ext.extension, insight_model_data)
+                    acd_fhir_utils.add_diagnosis_confidences(
+                        insight_span_ext.extension, insight_model_data
+                    )
 
-    if len(conditions_found) == 0:
+    if conditions_found:
         return None
-    else:
-        conditions = list(conditions_found.values())
-        for condition in conditions:
-            condition.subject = diagnostic_report.subject
-            fhir_object_utils.create_derived_resource_extension(condition)
+
+    conditions = list(conditions_found.values())
+    for condition in conditions:
+        condition.subject = diagnostic_report.subject
+        fhir_object_utils.append_derived_by_nlp_extension(condition)
     return conditions
 
 
@@ -69,4 +74,4 @@ def _build_resource_data(condition, concept):
         codeable_concept.text = concept.preferred_name
         condition.code = codeable_concept
         codeable_concept.coding = []
-    fhir_object_utils.add_codings(concept, condition.code)
+    acd_fhir_utils.add_codings(concept, condition.code)

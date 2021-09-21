@@ -14,11 +14,11 @@ import logging
 
 from ibm_whcs_sdk import annotator_for_clinical_data as acd
 
-from acd.fhir_enrichment import logging_codes
-from acd.fhir_enrichment.insights.add_insights_condition import create_conditions_from_insights
-from acd.fhir_enrichment.insights.add_insights_medication import create_med_statements_from_insights
-from acd.fhir_enrichment.insights.update_structured_resources import update_with_insights
-from acd.fhir_enrichment.utils.fhir_object_utils import create_transaction_bundle
+from text_analytics.acd.fhir_enrichment import logging_codes
+from text_analytics.acd.fhir_enrichment.insights.add_insights_condition import create_conditions_from_insights
+from text_analytics.acd.fhir_enrichment.insights.add_insights_medication import create_med_statements_from_insights
+from text_analytics.acd.fhir_enrichment.insights.update_structured_resources import update_with_insights
+from text_analytics.fhir_object_utils import create_transaction_bundle
 
 
 logger = logging.getLogger('whpa-cdp-lib-fhir-enrichment')
