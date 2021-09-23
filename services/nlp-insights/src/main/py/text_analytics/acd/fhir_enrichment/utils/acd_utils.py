@@ -11,14 +11,34 @@
 # ******************************************************************************/
 
 
-# Given an ACD attribute, and a set of ACD annotations, finds the annotation associated
-# with the attribute.
-# The "associated" annotation is the annotation with the uid indicated in the attribute
-# this will be the "source" for the attribute (eg the Concept used to create the attribute).
-def get_source_for_attribute(attr, concepts):
+from typing import Iterable
+
+from ibm_whcs_sdk.annotator_for_clinical_data import (
+    annotator_for_clinical_data_v1 as acd_v1,
+)
+
+
+def get_annotation_for_attribute(
+    attr: acd_v1.AttributeValueAnnotation, acd_annotations: Iterable[acd_v1.MedicationAnnotation]
+) -> acd_v1.MedicationAnnotation:
+    """Finds the annotation associated with the ACD attribute.
+
+    The "associated" annotation is the one with the uid indicated by the attribute.
+    This will be the "source" for the attribute (eg the annotation used to create the attribute).
+
+     Args:
+        attr - the ACD attribute value
+        acd_annotations - the list of acd concepts to search
+
+     Returns:
+        The concept that was used to create the attribute.
+    """
     concept = attr.concept
     uid = concept.uid
-    for c in concepts:
-        if c.uid == uid:
-            return c
+    for acd_annotation in acd_annotations:
+        if acd_annotation.uid == uid:
+            return acd_annotations
     return None
+
+
+

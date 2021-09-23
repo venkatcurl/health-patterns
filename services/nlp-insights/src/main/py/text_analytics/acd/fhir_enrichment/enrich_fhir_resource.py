@@ -57,18 +57,9 @@ immunization - FHIR DiagnosticReport input
 acd_result - ACD ContainerAnnotation, used for mock ACD output
 """
 def enrich_diagnostic_report(diagnostic_report_fhir, ai_result):
-    try:
-        create_conditions_fhir = create_conditions_from_insights(diagnostic_report_fhir, ai_result)
-        create_med_statements_fhir = create_med_statements_from_insights(diagnostic_report_fhir, ai_result)
-    except acd.ACDException as ex:
-        logger.exception("ACD returned an error code=%s message=%s correlation_id=%s",
-                         ex.code,
-                         ex.message,
-                         ex.correlation_id)
-        return None
-    except Exception:
-        logger.exception("could not find data %s", str(diagnostic_report_fhir))
-        return None
+    create_conditions_fhir = create_conditions_from_insights(diagnostic_report_fhir, ai_result)
+    create_med_statements_fhir = create_med_statements_from_insights(diagnostic_report_fhir, ai_result)
+
 
     # create fhir bundle with transaction
     bundle_entries = []

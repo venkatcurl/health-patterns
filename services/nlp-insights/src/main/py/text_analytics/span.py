@@ -11,12 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import NamedTuple
 
 """
-Main script to run doc tests
-
+Defines a span type used to represent a span
 """
 
-if __name__ == '__main__':
-    import doctest
-    doctest.DocTestSuite('.')
+
+class Span(NamedTuple):
+    """ "
+    A span is a selection of text of significance
+
+    Typically a span is the source of an insight
+    """
+    begin: int
+    end: int
+    covered_text: str

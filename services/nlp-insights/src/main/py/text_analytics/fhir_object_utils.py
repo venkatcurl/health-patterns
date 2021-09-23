@@ -46,6 +46,8 @@ from text_analytics import insight_constants  # noqa: F401 pylint: disable=unuse
 from text_analytics.insight_constants import CLASSIFICATION_DERIVED_CODE
 from text_analytics.insight_constants import CLASSIFICATION_DERIVED_SYSTEM
 from text_analytics.insight_constants import INSIGHT_CATEGORY_URL
+from text_analytics.insight_source import UnstructuredSource
+from text_analytics.span import Span
 
 
 def find_codings(
@@ -318,9 +320,6 @@ def create_confidence_extension(name: str, value: str) -> Extension:
     return confidence
 
 
-# TODO: Does a derived NLP extension need to reference the insight id in meta?
-# Seems like we need the linkage back to which insight / which NLP created
-# the insight?
 def create_derived_by_nlp_extension() -> Extension:
     """Creates an extension indicating the resource is derived from NLP
 
@@ -354,16 +353,120 @@ def create_derived_by_nlp_extension() -> Extension:
     return classification_ext
 
 
-def create_insight_span_extension(begin: int, end: int, covered_text: str) -> Extension:
+def create_unstructured_insight_detail_extension(
+    source: UnstructuredSource,
+    confidences: Optional[List[Extension]] = None,
+    nlp_extensions: Optional[List[Extension]] = None,
+) -> Extension:
+    """Creates an insight detail extension
+
+    Args:
+        source - reference to the unstructured data that generated the insight
+        confidences - optional confidence extensions associated with the insight
+        nlp_extensions - optional additional insight data from NLP
+                        (such as the raw data structure returned from NLP)
+
+    >>> visit_code = CodeableConcept.construct(text='Mental status Narrative')
+    >>> report = DiagnosticReport.construct(id='12345',
+    ...                                     code=visit_code,
+    ...                                     text='crazy')
+    >>> source = UnstructuredSource(resource=report,
+    ...                             text_span=Span(begin=0,end=5,covered_text='crazy'))
+    >>> confidences = [ create_confidence_extension('Suspected Score', .99) ]
+    >>> nlp_extensions = [
+    ...                   Extension.construct(
+    ...                    url='http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output')
+    ...                  ]
+    >>> extension = create_unstructured_insight_detail_extension(source,
+    ...                                                          confidences,
+    ...                                                          nlp_extensions)
+    >>> print(extension.json(indent=2))
+    {
+      "extension": [
+        {
+          "url": "http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output"
+        },
+        {
+          "url": "http://ibm.com/fhir/cdm/StructureDefinition/reference",
+          "valueReference": {
+            "reference": "DiagnosticReport/12345"
+          }
+        },
+        {
+          "extension": [
+            {
+              "extension": [
+                {
+                  "url": "http://ibm.com/fhir/cdm/StructureDefinition/covered-text",
+                  "valueString": "crazy"
+                },
+                {
+                  "url": "http://ibm.com/fhir/cdm/StructureDefinition/offset-begin",
+                  "valueInteger": 0
+                },
+                {
+                  "url": "http://ibm.com/fhir/cdm/StructureDefinition/offset-end",
+                  "valueInteger": 5
+                },
+                {
+                  "extension": [
+                    {
+                      "url": "http://ibm.com/fhir/cdm/StructureDefinition/description",
+                      "valueString": "Suspected Score"
+                    },
+                    {
+                      "url": "http://ibm.com/fhir/cdm/StructureDefinition/score",
+                      "valueString": "0.99"
+                    }
+                  ],
+                  "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-confidence"
+                }
+              ],
+              "url": "http://ibm.com/fhir/cdm/StructureDefinition/span"
+            }
+          ],
+          "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-result"
+        }
+      ],
+      "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-detail"
+    }
+    """
+    insight_span_ext = create_insight_span_extension(source.text_span)
+    if confidences:
+        if insight_span_ext.extension is None:
+            insight_span_ext.extension = []
+        insight_span_ext.extension.extend(confidences)
+    else:
+        pass
+
+    # Unstructured results extension
+    insight_results = Extension.construct()
+    insight_results.url = insight_constants.INSIGHT_RESULT_URL
+    insight_results.extension = [insight_span_ext]
+
+    # Create reference to unstructured report
+    report_reference_ext = create_reference_to_resource_extension(source.resource)
+
+    insight_detail = Extension.construct()
+    insight_detail.url = insight_constants.INSIGHT_DETAIL_URL
+    insight_detail.extension = nlp_extensions.copy() if nlp_extensions else []
+    insight_detail.extension.extend([report_reference_ext, insight_results])
+
+    return insight_detail
+
+
+def create_insight_span_extension(span: Span) -> Extension:
     """Creates an extension for the insight's span
 
     This extension is a list of begin-offset, end-offset, and covered-text
     extensions.
 
     Example:
-     >>> extension = create_insight_span_extension(100,
-     ...                                           123,
-     ...                                           'this is my covered Text')
+     >>> extension = create_insight_span_extension(
+     ...                 Span(begin=100,
+     ...                      end=123,
+     ...                      covered_text='this is my covered Text')
+     ...             )
      >>> print(extension.json(indent=2))
      {
        "extension": [
@@ -385,15 +488,15 @@ def create_insight_span_extension(begin: int, end: int, covered_text: str) -> Ex
     """
     offset_begin_ext = Extension.construct()
     offset_begin_ext.url = insight_constants.INSIGHT_SPAN_OFFSET_BEGIN_URL
-    offset_begin_ext.valueInteger = begin
+    offset_begin_ext.valueInteger = span.begin
 
     offset_end_ext = Extension.construct()
     offset_end_ext.url = insight_constants.INSIGHT_SPAN_OFFSET_END_URL
-    offset_end_ext.valueInteger = end
+    offset_end_ext.valueInteger = span.end
 
     covered_text_ext = Extension.construct()
     covered_text_ext.url = insight_constants.INSIGHT_SPAN_COVERED_TEXT_URL
-    covered_text_ext.valueString = covered_text
+    covered_text_ext.valueString = span.covered_text
 
     insight_span_ext = Extension.construct()
     insight_span_ext.url = insight_constants.INSIGHT_SPAN_URL
@@ -514,66 +617,133 @@ def append_derived_by_nlp_extension(resource: Resource) -> None:
         resource.extension.append(classification_ext)
 
 
-def create_insight_extension_in_meta(resource: Resource) -> Extension:
-    """Returns an insight extension to the meta section of a resource
+def add_unstructured_insight_to_meta(
+    resource: Resource, insight_id: Extension, unstructured_insight_detail: Extension
+) -> None:
+    """Updates a resource with an insight extension in the meta
 
     The meta section of the resource is created if it does not exist.
 
     Args:
           resource - the resource to update with a new insight extension in meta
-
-    Returns: The insight extension that was added
+          insight_id - a resource id extension
+                       see: create_insight_id_extension
+          insight_detail - an insight details extension
+                           see: create_unstructured_insight_detail_extension
 
     Example:
-     >>> condition1 = Condition.parse_obj(json.loads(
-     ... '''
-     ... {
-     ...     "code": {
-     ...         "text": "Diabetes Mellitus, Insulin-Dependent"
-     ...     },
-     ...     "subject": {
-     ...         "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
-     ...     },
-     ...     "resourceType": "Condition"
-     ... }''' ))
+    Create Example Resource:
+    >>> visit_code = CodeableConcept.construct(text='Mental status Narrative')
+    >>> report = DiagnosticReport.construct(id='12345',
+    ...                                     code=visit_code,
+    ...                                     text='crazy',
+    ...                                     status='final')
 
-     >>> extension = create_insight_extension_in_meta(condition1)
+    Create Insight ID extension:
+    >>> insight_id = create_insight_id_extension('insight-1', 'urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0')
 
-     >>> print(extension.json(indent=2))
-     {
-       "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight"
-     }
+    Create Insight detail Extension:
+    >>> source = UnstructuredSource(resource=report,
+    ...                             text_span=Span(begin=0,end=5,covered_text='crazy'))
+    >>> confidences = [ create_confidence_extension('Suspected Score', .99) ]
+    >>> nlp_extensions = [
+    ...                   Extension.construct(
+    ...                    url='http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output')
+    ...                  ]
+    >>> insight_detail = create_unstructured_insight_detail_extension(source,
+    ...                                                               confidences,
+    ...                                                               nlp_extensions)
 
-     >>> print(condition1.json(indent=2))
-     {
-       "meta": {
-         "extension": [
-           {
-             "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight"
-           }
-         ]
-       },
-       "code": {
-         "text": "Diabetes Mellitus, Insulin-Dependent"
-       },
-       "subject": {
-         "reference": "Patient/7c33b82a-4efc-4082-9fe9-8122d6791552"
-       },
-       "resourceType": "Condition"
-     }
+    Add Insight to meta:
+    >>> add_unstructured_insight_to_meta(report, insight_id, insight_detail)
+    >>> print(report.json(indent=2))
+    {
+      "id": "12345",
+      "meta": {
+        "extension": [
+          {
+            "extension": [
+              {
+                "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-id",
+                "valueIdentifier": {
+                  "system": "urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0",
+                  "value": "insight-1"
+                }
+              },
+              {
+                "extension": [
+                  {
+                    "url": "http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output"
+                  },
+                  {
+                    "url": "http://ibm.com/fhir/cdm/StructureDefinition/reference",
+                    "valueReference": {
+                      "reference": "DiagnosticReport/12345"
+                    }
+                  },
+                  {
+                    "extension": [
+                      {
+                        "extension": [
+                          {
+                            "url": "http://ibm.com/fhir/cdm/StructureDefinition/covered-text",
+                            "valueString": "crazy"
+                          },
+                          {
+                            "url": "http://ibm.com/fhir/cdm/StructureDefinition/offset-begin",
+                            "valueInteger": 0
+                          },
+                          {
+                            "url": "http://ibm.com/fhir/cdm/StructureDefinition/offset-end",
+                            "valueInteger": 5
+                          },
+                          {
+                            "extension": [
+                              {
+                                "url": "http://ibm.com/fhir/cdm/StructureDefinition/description",
+                                "valueString": "Suspected Score"
+                              },
+                              {
+                                "url": "http://ibm.com/fhir/cdm/StructureDefinition/score",
+                                "valueString": "0.99"
+                              }
+                            ],
+                            "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-confidence"
+                          }
+                        ],
+                        "url": "http://ibm.com/fhir/cdm/StructureDefinition/span"
+                      }
+                    ],
+                    "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-result"
+                  }
+                ],
+                "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-detail"
+              }
+            ],
+            "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight"
+          }
+        ]
+      },
+      "text": "crazy",
+      "code": {
+        "text": "Mental status Narrative"
+      },
+      "status": "final",
+      "resourceType": "DiagnosticReport"
+    }
     """
-    if resource.meta is None:
-        resource.meta = Meta.construct()
 
     insight_extension = Extension.construct()
     insight_extension.url = insight_constants.INSIGHT_URL
+    insight_extension.extension = [insight_id, unstructured_insight_detail]
+
+    if resource.meta is None:
+        resource.meta = Meta.construct()
 
     if resource.meta.extension is None:
         resource.meta.extension = []
 
     resource.meta.extension.append(insight_extension)
-
-    return insight_extension
 
 
 def create_transaction_bundle(
@@ -701,7 +871,8 @@ def create_reference_to_resource_extension(resource: Resource) -> Extension:
     >>> visit_code = CodeableConcept.construct(text='Mental status Narrative')
     >>> d = DiagnosticReport.construct(id='12345',
     ...                                code=visit_code,
-    ...                                text='crazy')
+    ...                                text='crazy',
+    ...                                status='final')
     >>> ext = create_reference_to_resource_extension(d)
     >>> print(ext.json(indent=2))
     {
