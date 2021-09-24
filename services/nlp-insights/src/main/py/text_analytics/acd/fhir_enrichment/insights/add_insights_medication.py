@@ -12,6 +12,7 @@
 
 from collections import namedtuple
 import logging
+from typing import Iterable
 from typing import List
 from typing import Optional
 
@@ -25,18 +26,18 @@ from fhir.resources.timing import Timing
 from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
-from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 import (
-    AttributeValueAnnotation,
-)
 
 from text_analytics import fhir_object_utils
 from text_analytics import insight_constants
 from text_analytics.acd.fhir_enrichment.insights.insight_constants import (
     INSIGHT_ID_SYSTEM_URN,
 )
-from text_analytics.acd.fhir_enrichment.utils import acd_utils
-from text_analytics.acd.fhir_enrichment.utils import enrichment_constants
+
 from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
+from text_analytics.acd.fhir_enrichment.utils.acd_utils import filter_attribute_values
+from text_analytics.acd.fhir_enrichment.utils.enrichment_constants import (
+    ANNOTATION_TYPE_MEDICATION,
+)
 from text_analytics.acd.fhir_enrichment.utils.fhir_object_utils import (
     get_medication_confidences,
     create_ACD_output_extension,
@@ -68,41 +69,34 @@ def create_med_statements_from_insights(
     Returns medication statements derived from NLP, or None if there are no such statements
     """
     # build insight set from ACD output
-    acd_attrs = (
-        acd_output.attribute_values
-    )  # accd_attrs is List[AttributeValueAnnotation]
+    acd_attrs: List[acd.AttributeValueAnnotation] = acd_output.attribute_values
     TrackerEntry = namedtuple("TrackerEntry", ["fhir_resource", "id_maker"])
     med_statement_tracker = {}  # key is UMLS ID, value is TrackerEntry
 
-    if acd_attrs is not None:
-        acd_medicationInds = (
-            acd_output.medication_ind
-        )  # acd_medicationInds is list[MedicationAnnotation]
-        for attr in acd_attrs:  # attr is AttributeValueAnnotation
-            if attr.name in enrichment_constants.annotation_type_medication:
-                medInd = acd_utils.get_annotation_for_attribute(
-                    attr, acd_medicationInds
+    if acd_attrs and acd_output.medication_ind:
+        acd_medicationInds: List[acd.MedicationAnnotation] = acd_output.medication_ind
+        for attr in filter_attribute_values(acd_attrs, ANNOTATION_TYPE_MEDICATION):
+            medInd = _get_annotation_for_attribute(attr, acd_medicationInds)
+            cui = medInd.cui
+
+            if cui not in med_statement_tracker:
+                med_statement_tracker[cui] = TrackerEntry(
+                    fhir_resource=_create_minimum_medication_statement(
+                        source_resource.subject, medInd
+                    ),
+                    id_maker=insight_id_maker(),
                 )
-                cui = medInd.cui
 
-                if cui not in med_statement_tracker:
-                    med_statement_tracker[cui] = TrackerEntry(
-                        fhir_resource=_create_minimum_medication_statement(
-                            source_resource.subject, medInd
-                        ),
-                        id_maker=insight_id_maker(),
-                    )
+            med_statement, id_maker = med_statement_tracker[cui]
 
-                med_statement, id_maker = med_statement_tracker[cui]
-
-                _add_insight_to_medication_statement(
-                    source_resource,
-                    med_statement,
-                    attr,
-                    medInd,
-                    acd_output,
-                    next(id_maker),
-                )
+            _add_insight_to_medication_statement(
+                source_resource,
+                med_statement,
+                attr,
+                medInd,
+                acd_output,
+                next(id_maker),
+            )
 
     if not med_statement_tracker:
         return None
@@ -116,10 +110,34 @@ def create_med_statements_from_insights(
     return med_statements
 
 
+def _get_annotation_for_attribute(
+    attr: acd.AttributeValueAnnotation,
+    acd_annotations: Iterable[acd.MedicationAnnotation],
+) -> acd.MedicationAnnotation:
+    """Finds the annotation associated with the ACD attribute.
+
+    The "associated" annotation is the one with the uid indicated by the attribute.
+    This will be the "source" for the attribute (eg the annotation used to create the attribute).
+
+     Args:
+        attr - the ACD attribute value
+        acd_annotations - the list of acd annotations to search
+
+     Returns:
+        The annotation that was used to create the attribute.
+    """
+    concept = attr.concept
+    uid = concept.uid
+    for acd_annotation in acd_annotations:
+        if acd_annotation.uid == uid:
+            return acd_annotations
+    return None
+
+
 def _add_insight_to_medication_statement(
     source_resource: Resource,
     med_statement: MedicationStatement,
-    attr: AttributeValueAnnotation,
+    attr: acd.AttributeValueAnnotation,
     medInd: acd.MedicationAnnotation,
     acd_output: acd.ContainerAnnotation,
     insight_id_string: str,

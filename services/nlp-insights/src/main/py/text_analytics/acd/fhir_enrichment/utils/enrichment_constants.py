@@ -18,6 +18,6 @@ VACCINE = 'VACCINE'
 
 # List of NLP annotations to use by FHIR resource type
 annotation_type_allergy = ['CDP-Allergy']
-annotation_type_condition = ['CDP-Condition']
+ANNOTATION_TYPE_CONDITION = ['CDP-Condition']
 annotation_type_immunization = ['CDP-Immunization']
-annotation_type_medication = ['CDP-Medication']
+ANNOTATION_TYPE_MEDICATION = ['CDP-Medication']

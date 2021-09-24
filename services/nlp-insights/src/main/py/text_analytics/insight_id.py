@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Generator
 
-def insight_id_maker(insight_id_string_prefix: str = "insight-", start: int = 1):
+
+def insight_id_maker(
+    insight_id_string_prefix: str = "insight-", start: int = 1
+) -> Generator[str, None, None]:
     """Generator to return the next insight id for a resource
 
     Args:
-        insight_id_string_prefix - string value to prepent to each id
+        insight_id_string_prefix - string value to prepend to each id
         count to start at
 
     Example:
