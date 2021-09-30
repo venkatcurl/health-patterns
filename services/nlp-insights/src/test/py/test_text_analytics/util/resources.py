@@ -11,18 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Defines a span type used to represent a span
-"""
-from typing import NamedTuple
+"""Defines a base testcase class that can use external resources in tests"""
+import os
+import unittest
 
 
-class Span(NamedTuple):
-    """ "
-    A span is a selection of text of significance
+class UnitTestUsingExternalResource(unittest.TestCase):
+    """TestCase that uses external resources, either for comparison or input"""
 
-    Typically a span is the source of an insight
-    """
-    begin: int
-    end: int
-    covered_text: str
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+        self.resource_path = (
+            os.path.dirname(os.path.abspath(__file__)) + "/../../../resources"
+        )
+        self.max_diff = None

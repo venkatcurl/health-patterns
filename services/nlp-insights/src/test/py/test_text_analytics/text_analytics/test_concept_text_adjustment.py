@@ -13,16 +13,16 @@
 # limitations under the License.
 
 """
-Test FHIR object builder utils
+Test text adjustment of concepts
 """
 import doctest
 import unittest
 
-import text_analytics.insight_id
+import text_analytics.concept_text_adjustment
 
 
-class TestInsightId(unittest.TestCase):
-    """Test the FHIR object utilities
+class TestConceptTextAdjustment(unittest.TestCase):
+    """Test the concept text adjustment
 
        These are tests other than documentation tests
     """
@@ -34,13 +34,13 @@ class TestInsightId(unittest.TestCase):
 def load_tests(loader, tests, pattern):
     """Used by unittest to discover tests
 
-       This might not work with some custom test runners, and doesn't
+       This might not work with some custom test_text_analytics runners, and doesn't
        apply any patterns to the tests or doc-tests that are
-       returned. It does work with the pydev test runner and the unittest CLI
+       returned. It does work with the pydev test_text_analytics runner and the unittest CLI
     """
     del loader, pattern  # not used
-    tests.addTests(doctest.DocTestSuite(text_analytics.insight_id))
-    tests.addTests(unittest.makeSuite(TestInsightId))
+    tests.addTests(doctest.DocTestSuite(text_analytics.concept_text_adjustment))
+    tests.addTests(unittest.makeSuite(TestConceptTextAdjustment))
     return tests
 
 

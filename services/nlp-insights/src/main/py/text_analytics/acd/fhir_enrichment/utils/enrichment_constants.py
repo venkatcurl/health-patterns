@@ -10,14 +10,9 @@
 # deposited with the U.S. Copyright Office.                                   *
 # ******************************************************************************/
 
-# Types of data to process for enrichment
-ALLERGEN = 'ALLERGEN'
-CONDITION = 'CONDITION'
-MANIFESTATION = 'MANIFESTATION'
-VACCINE = 'VACCINE'
 
 # List of NLP annotations to use by FHIR resource type
-annotation_type_allergy = ['CDP-Allergy']
+ANNOTATION_TYPE_ALLERGY = ['CDP-Allergy']
 ANNOTATION_TYPE_CONDITION = ['CDP-Condition']
-annotation_type_immunization = ['CDP-Immunization']
+ANNOTATION_TYPE_IMMUNIZATION = ['CDP-Immunization']
 ANNOTATION_TYPE_MEDICATION = ['CDP-Medication']

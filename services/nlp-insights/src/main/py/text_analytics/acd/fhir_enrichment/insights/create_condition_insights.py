@@ -39,9 +39,9 @@ from text_analytics.acd.fhir_enrichment.utils.fhir_object_utils import (
     get_diagnosis_confidences,
 )
 from text_analytics.fhir_object_utils import (
-    create_unstructured_insight_detail_extension,
+    create_derived_from_unstructured_insight_detail_extension,
     create_insight_id_extension,
-    add_unstructured_insight_to_meta,
+    add_insight_to_meta,
 )
 from text_analytics.insight_id import insight_id_maker
 from text_analytics.insight_source import UnstructuredSource
@@ -129,7 +129,7 @@ def _add_insight_to_condition(
 
     source = UnstructuredSource(
         resource=source_resource,
-        span=Span(begin=attr.begin, end=attr.end, covered_text=attr.covered_text),
+        text_span=Span(begin=attr.begin, end=attr.end, covered_text=attr.covered_text),
     )
 
     if attr.insight_model_data:
@@ -137,15 +137,15 @@ def _add_insight_to_condition(
     else:
         confidences = None
 
-    unstructured_insight_detail = create_unstructured_insight_detail_extension(
-        source=source,
-        confidences=confidences,
-        nlp_extensions=[create_ACD_output_extension(acd_output)],
+    unstructured_insight_detail = (
+        create_derived_from_unstructured_insight_detail_extension(
+            source=source,
+            confidences=confidences,
+            nlp_extensions=[create_ACD_output_extension(acd_output)],
+        )
     )
 
-    add_unstructured_insight_to_meta(
-        condition, insight_id_ext, unstructured_insight_detail
-    )
+    add_insight_to_meta(condition, insight_id_ext, unstructured_insight_detail)
 
     _add_insight_codings_to_condition(condition, concept)
 

@@ -16,6 +16,7 @@
 
 import json  # noqa: F401 pylint: disable=unused-import
 from typing import List
+from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
@@ -289,20 +290,20 @@ def create_confidence_extension(name: str, value: str) -> Extension:
     """Creates a FHIR extension element for insight confidence
 
     Example:
-     >>> print(create_confidence_extension('insight', 1.0).json(indent=2))
-     {
-       "extension": [
-         {
-           "url": "http://ibm.com/fhir/cdm/StructureDefinition/description",
-           "valueString": "insight"
-         },
-         {
-           "url": "http://ibm.com/fhir/cdm/StructureDefinition/score",
-           "valueString": "1.0"
-         }
-       ],
-       "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-confidence"
-     }
+    >>> print(create_confidence_extension('insight', 1.0).json(indent=2))
+    {
+      "extension": [
+        {
+          "url": "http://ibm.com/fhir/cdm/StructureDefinition/description",
+          "valueString": "insight"
+        },
+        {
+          "url": "http://ibm.com/fhir/cdm/StructureDefinition/score",
+          "valueDecimal": 1.0
+        }
+      ],
+      "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-confidence"
+    }
     """
     confidence = Extension.construct()
     confidence.url = insight_constants.INSIGHT_CONFIDENCE_URL
@@ -313,7 +314,7 @@ def create_confidence_extension(name: str, value: str) -> Extension:
 
     confidence_score = Extension.construct()
     confidence_score.url = insight_constants.INSIGHT_CONFIDENCE_SCORE_URL
-    confidence_score.valueString = value
+    confidence_score.valueDecimal = value
 
     confidence.extension = [confidence_name]
     confidence.extension.append(confidence_score)
@@ -353,19 +354,74 @@ def create_derived_by_nlp_extension() -> Extension:
     return classification_ext
 
 
-def create_unstructured_insight_detail_extension(
+def create_derived_from_concept_insight_detail_extension(
+    reference_path_ext: Extension,
+    nlp_extensions: Optional[List[Extension]] = None,
+) -> Extension:
+    """Creates an insight detail extension that includes NLP extensions
+
+    This is used to indicate that a resource has been enhanced with
+    additional codings/insights. By running NLP over existing concepts
+    in the resource.
+
+    Args:
+        nlp_extensions - optional additional insight data from NLP
+                        (such as the raw data structure returned from NLP)
+    Returns:
+        the extension
+
+    Example:
+    >>> nlp_extensions = [
+    ...                   Extension.construct(
+    ...                    url='http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output')
+    ...                  ]
+    >>> reference_path_ext = create_reference_path_extension('AllergyIntolerance.code')
+    >>> ext = create_derived_from_concept_insight_detail_extension(reference_path_ext, nlp_extensions)
+    >>> print(ext.json(indent=2))
+    {
+      "extension": [
+        {
+          "url": "http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output"
+        },
+        {
+          "url": "http://ibm.com/fhir/cdm/StructureDefinition/reference-path",
+          "valueString": "AllergyIntolerance.code"
+        }
+      ],
+      "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-detail"
+    }
+    """
+    insight_detail = Extension.construct()
+    insight_detail.url = insight_constants.INSIGHT_DETAIL_URL
+    if insight_detail.extension is None:
+        insight_detail.extension = []
+
+    if nlp_extensions:
+        insight_detail.extension.extend(nlp_extensions)
+
+    if reference_path_ext:
+        insight_detail.extension.append(reference_path_ext)
+
+    return insight_detail
+
+
+def create_derived_from_unstructured_insight_detail_extension(
     source: UnstructuredSource,
     confidences: Optional[List[Extension]] = None,
     nlp_extensions: Optional[List[Extension]] = None,
 ) -> Extension:
-    """Creates an insight detail extension
+    """Creates an insight detail extension for a derived resource
+
+    The derived resource is expected to have been derived based on unstructured data in
+    the source resource.
 
     Args:
-        source - reference to the unstructured data that generated the insight
+        source - the resource containing the unstructured data used to derive the insight resource
         confidences - optional confidence extensions associated with the insight
         nlp_extensions - optional additional insight data from NLP
                         (such as the raw data structure returned from NLP)
 
+    Example:
     >>> visit_code = CodeableConcept.construct(text='Mental status Narrative')
     >>> report = DiagnosticReport.construct(id='12345',
     ...                                     code=visit_code,
@@ -377,9 +433,9 @@ def create_unstructured_insight_detail_extension(
     ...                   Extension.construct(
     ...                    url='http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output')
     ...                  ]
-    >>> extension = create_unstructured_insight_detail_extension(source,
-    ...                                                          confidences,
-    ...                                                          nlp_extensions)
+    >>> extension = create_derived_from_unstructured_insight_detail_extension(source,
+    ...                                                                       confidences,
+    ...                                                                       nlp_extensions)
     >>> print(extension.json(indent=2))
     {
       "extension": [
@@ -416,7 +472,7 @@ def create_unstructured_insight_detail_extension(
                     },
                     {
                       "url": "http://ibm.com/fhir/cdm/StructureDefinition/score",
-                      "valueString": "0.99"
+                      "valueDecimal": 0.99
                     }
                   ],
                   "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-confidence"
@@ -432,6 +488,7 @@ def create_unstructured_insight_detail_extension(
     }
     """
     insight_span_ext = create_insight_span_extension(source.text_span)
+
     if confidences:
         if insight_span_ext.extension is None:
             insight_span_ext.extension = []
@@ -617,8 +674,8 @@ def append_derived_by_nlp_extension(resource: Resource) -> None:
         resource.extension.append(classification_ext)
 
 
-def add_unstructured_insight_to_meta(
-    resource: Resource, insight_id: Extension, unstructured_insight_detail: Extension
+def add_insight_to_meta(
+    resource: Resource, insight_id: Extension, insight_detail: Extension
 ) -> None:
     """Updates a resource with an insight extension in the meta
 
@@ -629,7 +686,6 @@ def add_unstructured_insight_to_meta(
           insight_id - a resource id extension
                        see: create_insight_id_extension
           insight_detail - an insight details extension
-                           see: create_unstructured_insight_detail_extension
 
     Example:
     Create Example Resource:
@@ -650,12 +706,12 @@ def add_unstructured_insight_to_meta(
     ...                   Extension.construct(
     ...                    url='http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output')
     ...                  ]
-    >>> insight_detail = create_unstructured_insight_detail_extension(source,
-    ...                                                               confidences,
-    ...                                                               nlp_extensions)
+    >>> insight_detail = create_derived_from_unstructured_insight_detail_extension(source,
+    ...                                                                            confidences,
+    ...                                                                            nlp_extensions)
 
     Add Insight to meta:
-    >>> add_unstructured_insight_to_meta(report, insight_id, insight_detail)
+    >>> add_insight_to_meta(report, insight_id, insight_detail)
     >>> print(report.json(indent=2))
     {
       "id": "12345",
@@ -705,7 +761,7 @@ def add_unstructured_insight_to_meta(
                               },
                               {
                                 "url": "http://ibm.com/fhir/cdm/StructureDefinition/score",
-                                "valueString": "0.99"
+                                "valueDecimal": 0.99
                               }
                             ],
                             "url": "http://ibm.com/fhir/cdm/StructureDefinition/insight-confidence"
@@ -735,7 +791,7 @@ def add_unstructured_insight_to_meta(
 
     insight_extension = Extension.construct()
     insight_extension.url = insight_constants.INSIGHT_URL
-    insight_extension.extension = [insight_id, unstructured_insight_detail]
+    insight_extension.extension = [insight_id, insight_detail]
 
     if resource.meta is None:
         resource.meta = Meta.construct()
@@ -746,13 +802,19 @@ def add_unstructured_insight_to_meta(
     resource.meta.extension.append(insight_extension)
 
 
-def create_transaction_bundle(
-    resource_action_list: List[Tuple[Resource, str, str]]
-) -> Bundle:
-    """Creates a bundle from a list of resource tuples
+class BundleEntryDfn(NamedTuple):
+    """Entry used by create_transaction_bundle to create a bundle"""
+
+    resource: Resource
+    method: str
+    url: str
+
+
+def create_transaction_bundle(resource_action_list: List[BundleEntryDfn]) -> Bundle:
+    """Creates a bundle from a list of bundle resources
 
     Args:
-        resource_action_list - list of tuples of the form (resource, method_str, url_str)
+        resource_action_list - list of bundle resources
 
     Example:
 
@@ -782,8 +844,8 @@ def create_transaction_bundle(
     ... }'''))
 
     Result:
-    >>> bundle = create_transaction_bundle([(condition1, 'POST', 'http://url1'),
-    ...                                     (condition2, 'POST', 'http://url2')])
+    >>> bundle = create_transaction_bundle([BundleEntryDfn(condition1, 'POST', 'http://url1'),
+    ...                                     BundleEntryDfn(condition2, 'POST', 'http://url2')])
     >>> print(bundle.json(indent=2))
     {
       "entry": [
@@ -826,10 +888,10 @@ def create_transaction_bundle(
     bundle.type = "transaction"
     bundle.entry = []
 
-    for resource, request_type, url in resource_action_list:
+    for res_act in resource_action_list:
         bundle_entry = BundleEntry.construct()
-        bundle_entry.resource = resource
-        request = BundleEntryRequest.parse_obj({"method": request_type, "url": url})
+        bundle_entry.resource = res_act.resource
+        request = BundleEntryRequest.construct(method=res_act.method, url=res_act.url)
         bundle_entry.request = request
         bundle.entry.append(bundle_entry)
 

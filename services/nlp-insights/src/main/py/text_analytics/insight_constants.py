@@ -19,7 +19,7 @@
 """
 
 # Extension URL used in standard FHIR resource extension (extension directly under the resource type)
-#INSIGHT_REFERENCE_URL = "http://ibm.com/fhir/cdm/insight/reference"               # general extension for a resource
+# INSIGHT_REFERENCE_URL = "http://ibm.com/fhir/cdm/insight/reference"               # general extension for a resource
 INSIGHT_CATEGORY_URL = "http://ibm.com/fhir/cdm/StructureDefinition/category"     # indicates how derivation was done, eg from NLP
 
 # Extension URLs used in meta extensions (extensions in the meta section of a FHIR resource)

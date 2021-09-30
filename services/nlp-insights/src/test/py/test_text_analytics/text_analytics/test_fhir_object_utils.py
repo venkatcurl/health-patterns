@@ -34,9 +34,9 @@ class TestFhirObjUtils(unittest.TestCase):
 def load_tests(loader, tests, pattern):
     """Used by unittest to discover tests
 
-       This might not work with some custom test runners, and doesn't
+       This might not work with some custom test_text_analytics runners, and doesn't
        apply any patterns to the tests or doc-tests that are
-       returned. It does work with the pydev test runner and the unittest CLI
+       returned. It does work with the pydev test_text_analytics runner and the unittest CLI
     """
     del loader, pattern  # not used
     tests.addTests(doctest.DocTestSuite(text_analytics.fhir_object_utils))
