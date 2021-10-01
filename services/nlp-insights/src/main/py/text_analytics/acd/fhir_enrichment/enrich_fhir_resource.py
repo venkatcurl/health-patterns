@@ -10,7 +10,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
+# limitations under the License. 
 
 from typing import List
 from typing import Optional
@@ -86,7 +86,7 @@ def create_new_resources_from_insights(
     conditions = create_conditions_from_insights(source_resource, insights)
     med_statements = create_med_statements_from_insights(source_resource, insights)
 
-    if not (conditions or med_statements):
+    if (not conditions and not med_statements):
         return None
 
     bundle_entries = []

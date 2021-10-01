@@ -1,14 +1,16 @@
-# *******************************************************************************
-# IBM Confidential                                                            *
-#                                                                             *
-# OCO Source Materials                                                        *
-#                                                                             *
-# (C) Copyright IBM Corp. 2021                                                *
-#                                                                             *
-# The source code for this program is not published or otherwise              *
-# divested of its trade secrets, irrespective of what has been                *
-# deposited with the U.S. Copyright Office.                                   *
-# ******************************************************************************/
+# Copyright 2021 IBM All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from collections import namedtuple
 from typing import Iterable
@@ -67,18 +69,26 @@ def create_conditions_from_insights(
     acd_concepts: List[acd.Concept] = acd_output.concepts
     if acd_attrs and acd_concepts:
         for attr in filter_attribute_values(acd_attrs, ANNOTATION_TYPE_CONDITION):
-            concept: acd.Concept = _get_concept_for_attribute(attr, acd_concepts)
-            if concept.cui not in condition_tracker:
-                condition_tracker[concept.cui] = TrackerEntry(
-                    fhir_resource=Condition.construct(subject=source_resource.subject),
-                    id_maker=insight_id_maker(),
+            concept = _get_concept_for_attribute(attr, acd_concepts)
+            if concept:
+                if concept.cui not in condition_tracker:
+                    condition_tracker[concept.cui] = TrackerEntry(
+                        fhir_resource=Condition.construct(
+                            subject=source_resource.subject
+                        ),
+                        id_maker=insight_id_maker(),
+                    )
+
+                condition, id_maker = condition_tracker[concept.cui]
+
+                _add_insight_to_condition(
+                    source_resource,
+                    condition,
+                    attr,
+                    concept,
+                    acd_output,
+                    next(id_maker),
                 )
-
-            condition, id_maker = condition_tracker[concept.cui]
-
-            _add_insight_to_condition(
-                source_resource, condition, attr, concept, acd_output, next(id_maker)
-            )
 
     if not condition_tracker:
         return None
@@ -93,7 +103,7 @@ def create_conditions_from_insights(
 
 def _get_concept_for_attribute(
     attr: acd.AttributeValueAnnotation, concepts: Iterable[acd.Concept]
-) -> acd.Concept:
+) -> Optional[acd.Concept]:
     """Finds the concept associated with the ACD attribute
 
     The "associated" concept is the one with the uid indicated by the attribute.
@@ -121,7 +131,7 @@ def _add_insight_to_condition(
     concept: acd.Concept,
     acd_output: acd.ContainerAnnotation,
     insight_id_string: str,
-):
+) -> None:
     """Adds data from the insight to the condition"""
     insight_id_ext = create_insight_id_extension(
         insight_id_string, INSIGHT_ID_SYSTEM_URN
@@ -153,7 +163,7 @@ def _add_insight_to_condition(
 def _add_insight_codings_to_condition(
     condition: Condition, concept: acd.Concept
 ) -> None:
-    """Adds informatino from the insight's concept to a condition
+    """Adds information from the insight's concept to a condition
 
     Args:
         Condition - condition to update

@@ -104,7 +104,7 @@ def adjust_concept_text(
 
     if adjuster:
         return AdjustedConceptRef(
-            source_concept=concept, adjusted_text=adjuster(concept.code_ref.text)
+            concept_ref=concept, adjusted_text=adjuster(concept.code_ref.text)
         )
 
-    return AdjustedConceptRef(source_concept=concept, adjusted_text=concept.code_ref.text)
+    return AdjustedConceptRef(concept_ref=concept, adjusted_text=concept.code_ref.text)

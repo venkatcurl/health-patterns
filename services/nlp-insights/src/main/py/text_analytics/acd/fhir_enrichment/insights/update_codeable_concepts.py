@@ -133,7 +133,7 @@ def _add_codeable_concept_insight(
     acd_attr_types = _get_acd_attr_types(fhir_resource)
     total_num_codes_added: int = 0
 
-    if insight.acd_response.attribute_values:
+    if acd_attr_types and insight.acd_response.attribute_values:
         for attr in filter_attribute_values(
             insight.acd_response.attribute_values, acd_attr_types
         ):

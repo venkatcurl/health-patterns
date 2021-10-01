@@ -18,7 +18,6 @@ import json  # noqa: F401 pylint: disable=unused-import
 from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Tuple
 
 from fhir.resources.bundle import Bundle
 from fhir.resources.bundle import BundleEntry, BundleEntryRequest
@@ -67,7 +66,11 @@ def _get_extension(element: Element, extension_url: str) -> Optional[Extension]:
     """Returns the extension for the element with the provided url"""
     if element.extension:
         return next(
-            filter(lambda extension: extension.url == extension_url, element.extension),
+            filter(
+                lambda extension: extension is not None
+                and extension.url == extension_url,
+                element.extension,
+            ),
             None,
         )
     return None
@@ -76,13 +79,18 @@ def _get_extension(element: Element, extension_url: str) -> Optional[Extension]:
 def get_derived_by_nlp_extension(element: Element) -> Optional[Extension]:
     """Returns a derived by NLP extension if the element has one"""
     extension = _get_extension(element, extension_url=INSIGHT_CATEGORY_URL)
-    if extension.valueCodeableConcept.coding and any(
-        coding
-        and coding.system
-        and coding.code
-        and coding.system == CLASSIFICATION_DERIVED_SYSTEM
-        and coding.code == CLASSIFICATION_DERIVED_CODE
-        for coding in extension.valueCodeableConcept.coding
+    if (
+        extension
+        and extension.valueCodeableConcept
+        and extension.valueCodeableConcept.coding
+        and any(
+            coding
+            and coding.system
+            and coding.code
+            and coding.system == CLASSIFICATION_DERIVED_SYSTEM
+            and coding.code == CLASSIFICATION_DERIVED_CODE
+            for coding in extension.valueCodeableConcept.coding
+        )
     ):
         return extension
 
@@ -212,7 +220,6 @@ def append_derived_by_nlp_coding(
         codeable_concept.coding.append(new_coding)
 
 
-# FIXME: former create_coding_system_entry_with_extension
 def create_coding(
     system: str, code: str, display: str = None, derived_by_nlp: bool = False
 ) -> Element:
