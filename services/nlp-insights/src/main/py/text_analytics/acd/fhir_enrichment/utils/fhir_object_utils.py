@@ -15,7 +15,6 @@
 from typing import List
 from typing import Optional
 
-from fhir.resources.attachment import Attachment
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.extension import Extension
 from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 import (
@@ -24,19 +23,12 @@ from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 imp
 
 from text_analytics import fhir_object_utils
 from text_analytics import insight_constants
-from text_analytics.fhir_object_utils import create_coding
-from text_analytics.fhir_object_utils import create_confidence_extension
 
 
 # Creates extension to hold the NLP output (ACD results).
-def create_ACD_output_extension(acd_output):
+#def create_ACD_output_extension(acd_output):
     # TODO: save to an external MinIO location.  For now, just put in a dummy String
-    insight_detail_ext = Extension.construct()
-    insight_detail_ext.url = insight_constants.INSIGHT_ACD_OUTPUT_URL
-    attachment = Attachment.construct()
-    attachment.url = "uri://path/acd-123.json"
-    insight_detail_ext.valueAttachment = attachment
-    return insight_detail_ext
+#    return fhir_object_utils.create_nlp_output_extension("uri://path/acd-123.json")
 
 
 # ACD will often return multiple codes from one system in a comma delimited list.
@@ -127,7 +119,9 @@ def add_codings(concept, codeable_concept):
             codeable_concept, concept.cui, insight_constants.UMLS_URL
         )
         if code_entry is None:
-            coding = create_coding(insight_constants.UMLS_URL, concept.cui)
+            coding = fhir_object_utils.create_coding(
+                insight_constants.UMLS_URL, concept.cui
+            )
             coding.display = concept.preferred_name
             codeable_concept.coding.append(coding)
     if concept.snomed_concept_id is not None:
@@ -173,7 +167,9 @@ def add_codings_drug(acd_drug, codeable_concept):
             codeable_concept, acd_drug.get("cui"), insight_constants.UMLS_URL
         )
         if code_entry is None:
-            coding = create_coding(insight_constants.UMLS_URL, acd_drug.get("cui"))
+            coding = fhir_object_utils.create_coding(
+                insight_constants.UMLS_URL, acd_drug.get("cui")
+            )
             coding.display = acd_drug.get("drugSurfaceForm")
             codeable_concept.coding.append(coding)
     if acd_drug.get("rxNormID") is not None:
@@ -194,11 +190,14 @@ def _find_codable_concept(codeable_concept, id, system):
 def get_diagnosis_confidences(
     insight_model_data: InsightModelData,
 ) -> Optional[List[Extension]]:
+    if not insight_model_data:
+        return None
+    
     confidence_list = []
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_EXPLICIT,
                 insight_model_data.diagnosis.usage.explicit_score,
             )
@@ -208,7 +207,7 @@ def get_diagnosis_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_PATIENT_REPORTED,
                 insight_model_data.diagnosis.usage.patient_reported_score,
             )
@@ -218,7 +217,7 @@ def get_diagnosis_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_DISCUSSED,
                 insight_model_data.diagnosis.usage.discussed_score,
             )
@@ -228,7 +227,7 @@ def get_diagnosis_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_FAMILY_HISTORY,
                 insight_model_data.diagnosis.family_history_score,
             )
@@ -238,7 +237,7 @@ def get_diagnosis_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_SUSPECTED,
                 insight_model_data.diagnosis.suspected_score,
             )
@@ -270,7 +269,7 @@ def get_medication_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_MEDICATION_TAKEN,
                 insight_model_data.medication.usage.taken_score,
             )
@@ -280,7 +279,7 @@ def get_medication_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_MEDICATION_CONSIDERING,
                 insight_model_data.medication.usage.considering_score,
             )
@@ -290,7 +289,7 @@ def get_medication_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_MEDICATION_DISCUSSED,
                 insight_model_data.medication.usage.discussed_score,
             )
@@ -300,7 +299,7 @@ def get_medication_confidences(
 
     try:
         confidence_list.append(
-            create_confidence_extension(
+            fhir_object_utils.create_confidence_extension(
                 insight_constants.CONFIDENCE_SCORE_MEDICATION_MEASUREMENT,
                 insight_model_data.medication.usage.lab_measurement_score,
             )

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Test text adjustment of concepts
+Test concept text adjustment
 """
 import doctest
 import unittest

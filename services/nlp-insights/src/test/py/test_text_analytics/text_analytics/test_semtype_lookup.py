@@ -11,18 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Test semantic type lookup"""
 
-"""
-Test insight id name generation
-"""
 import doctest
 import unittest
 
-import text_analytics.insight_id
+import text_analytics.umls.semtype_lookup
 
 
-class TestInsightId(unittest.TestCase):
-    """Insight Id tests
+class TestSemanticTypes(unittest.TestCase):
+    """Test semantic type lookup
 
        These are tests other than documentation tests
     """
@@ -39,8 +37,8 @@ def load_tests(loader, tests, pattern):
        returned. It does work with the pydev test_text_analytics runner and the unittest CLI
     """
     del loader, pattern  # not used
-    tests.addTests(doctest.DocTestSuite(text_analytics.insight_id))
-    tests.addTests(unittest.makeSuite(TestInsightId))
+    tests.addTests(doctest.DocTestSuite(text_analytics.umls.semtype_lookup))
+    tests.addTests(unittest.makeSuite(TestSemanticTypes))
     return tests
 
 

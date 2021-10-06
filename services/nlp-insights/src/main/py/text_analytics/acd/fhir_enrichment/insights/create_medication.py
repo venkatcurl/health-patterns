@@ -32,7 +32,6 @@ from text_analytics import insight_constants
 from text_analytics.acd.fhir_enrichment.insights.insight_constants import (
     INSIGHT_ID_SYSTEM_URN,
 )
-
 from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
 from text_analytics.acd.fhir_enrichment.utils.acd_utils import filter_attribute_values
 from text_analytics.acd.fhir_enrichment.utils.enrichment_constants import (
@@ -40,7 +39,6 @@ from text_analytics.acd.fhir_enrichment.utils.enrichment_constants import (
 )
 from text_analytics.acd.fhir_enrichment.utils.fhir_object_utils import (
     get_medication_confidences,
-    create_ACD_output_extension,
 )
 from text_analytics.fhir_object_utils import (
     create_derived_from_unstructured_insight_detail_extension,
@@ -49,6 +47,7 @@ from text_analytics.fhir_object_utils import (
 )
 from text_analytics.insight_id import insight_id_maker
 from text_analytics.insight_source import UnstructuredSource
+from text_analytics.nlp_config import NlpConfig
 from text_analytics.span import Span
 from text_analytics.types import UnstructuredFhirResourceType
 
@@ -59,6 +58,7 @@ logger = logging.getLogger("whpa-cdp-lib-fhir-enrichment")
 def create_med_statements_from_insights(
     source_resource: UnstructuredFhirResourceType,
     acd_output: acd.ContainerAnnotation,
+    nlp_config: NlpConfig
 ) -> Optional[List[MedicationStatement]]:
     """Creates medication statements, given acd data from the unstructured source resource
 
@@ -96,6 +96,7 @@ def create_med_statements_from_insights(
                 medInd,
                 acd_output,
                 next(id_maker),
+                nlp_config
             )
 
     if not med_statement_tracker:
@@ -141,6 +142,7 @@ def _add_insight_to_medication_statement(
     medInd: acd.MedicationAnnotation,
     acd_output: acd.ContainerAnnotation,
     insight_id_string: str,
+    nlp_config: NlpConfig
 ):
     """Adds insight data to the medication statement"""
 
@@ -158,11 +160,13 @@ def _add_insight_to_medication_statement(
     else:
         confidences = None
 
+    nlp_output_ext = nlp_config.create_nlp_output_extension(acd_output)
+
     unstructured_insight_detail = (
         create_derived_from_unstructured_insight_detail_extension(
             source=source,
             confidences=confidences,
-            nlp_extensions=[create_ACD_output_extension(acd_output)],
+            nlp_extensions=[nlp_output_ext] if nlp_output_ext else None,
         )
     )
 

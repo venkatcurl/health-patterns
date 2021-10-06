@@ -1,14 +1,16 @@
-# *******************************************************************************
-# IBM Confidential                                                            *
-#                                                                             *
-# OCO Source Materials                                                        *
-#                                                                             *
-# (C) Copyright IBM Corp. 2021                                                *
-#                                                                             *
-# The source code for this program is not published or otherwise              *
-# divested of its trade secrets, irrespective of what has been                *
-# deposited with the U.S. Copyright Office.                                   *
-# ******************************************************************************/
+# Copyright 2021 IBM All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from typing import Generator
 from typing import Iterable
@@ -28,12 +30,12 @@ from text_analytics import fhir_object_utils
 from text_analytics.acd.fhir_enrichment.utils import enrichment_constants
 from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
 from text_analytics.acd.fhir_enrichment.utils.acd_utils import filter_attribute_values
-from text_analytics.acd.insight_constants import INSIGHT_ID_SYSTEM_URN
 from text_analytics.concept_text_adjustment import AdjustedConceptRef
 from text_analytics.insight_id import insight_id_maker
+from text_analytics.nlp_config import NlpConfig
 
 
-class CodeableConceptAcdInsight(NamedTuple):
+class AcdConceptRef(NamedTuple):
     """Binding between reference to a codeable concept with adjusted text, and an ACD NLP Response"""
 
     adjusted_concept: AdjustedConceptRef
@@ -66,51 +68,17 @@ def _get_source_for_attribute(
     """
     concept = attr.concept
     uid = concept.uid
-    for c in concepts:
-        if c.uid == uid:
-            return c
+    for concept in concepts:
+        if concept.uid == uid:
+            return concept
     return None
-
-
-def _add_insight_to_resource_meta(
-    fhir_resource: Resource,
-    insight: CodeableConceptAcdInsight,
-    insight_id_str: str,
-    system: str = INSIGHT_ID_SYSTEM_URN,
-) -> None:
-    """Updates the meta section of a resource with extensions for the insight
-
-    Args:
-        fhir_resource - resource to update meta
-        insight - the new insight
-        insight_id_str - identifier for the new insight
-    """
-
-    insight_id_ext = fhir_object_utils.create_insight_id_extension(
-        insight_id_str, system
-    )
-
-    reference_path_ext = fhir_object_utils.create_reference_path_extension(
-        insight.adjusted_concept.concept_ref.fhir_path
-    )
-
-    evaluated_output_ext = acd_fhir_utils.create_ACD_output_extension(
-        insight.acd_response
-    )
-
-    insight_detail = (
-        fhir_object_utils.create_derived_from_concept_insight_detail_extension(
-            reference_path_ext, [evaluated_output_ext]
-        )
-    )
-
-    fhir_object_utils.add_insight_to_meta(fhir_resource, insight_id_ext, insight_detail)
 
 
 def _add_codeable_concept_insight(
     fhir_resource: Resource,
-    insight: CodeableConceptAcdInsight,
+    insight: AcdConceptRef,
     id_maker: Generator[str, None, None],
+    nlp_config: NlpConfig,
 ) -> int:
     """Updates a codeable concept and resource meta with ACD insights.
 
@@ -125,6 +93,7 @@ def _add_codeable_concept_insight(
         insight - binding between the concept text that was analyzed by ACD-NLP and the
                   ACD response for that analysis.
         id_maker - generator for producing ids for insights
+        nlp_config - nlp configuration
 
     Returns: the number of codings added to the codeable concept.
     """
@@ -147,13 +116,21 @@ def _add_codeable_concept_insight(
 
             if num_codes_appended > 0:
                 total_num_codes_added += num_codes_appended
-                _add_insight_to_resource_meta(fhir_resource, insight, next(id_maker))
+                fhir_object_utils.append_insight_with_path_expr_to_resource_meta(
+                    fhir_resource=fhir_resource,
+                    insight_id=next(id_maker),
+                    system=nlp_config.nlp_system,
+                    fhir_path=insight.adjusted_concept.concept_ref.fhir_path,
+                    nlp_output_uri=nlp_config.get_nlp_output_loc(insight.acd_response),
+                )
 
     return total_num_codes_added
 
 
 def update_codeable_concepts_and_meta_with_insights(
-    fhir_resource: Resource, concept_insights: List[CodeableConceptAcdInsight]
+    fhir_resource: Resource,
+    concept_insights: List[AcdConceptRef],
+    nlp_config: NlpConfig,
 ) -> int:
     """Updates the resource with derived insights
 
@@ -167,6 +144,7 @@ def update_codeable_concepts_and_meta_with_insights(
         fhir_resource - the fhir resource to update the meta
         concept_insights - collection of concepts to enrich with insights.
                            These concepts should be contained within the FHIR resource.
+        nlp_config - NLP configuration
 
     Returns: total number of derived codings added to the resource, across all provided
              codeable concepts.
@@ -177,7 +155,7 @@ def update_codeable_concepts_and_meta_with_insights(
 
     for concept_insight in concept_insights:
         num_codes_added += _add_codeable_concept_insight(
-            fhir_resource, concept_insight, id_maker
+            fhir_resource, concept_insight, id_maker, nlp_config
         )
 
     return num_codes_added

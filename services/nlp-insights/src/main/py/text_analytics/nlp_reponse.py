@@ -11,6 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Module for defining data types to represent simple NLP concepts
+"""
 
-"""Constants specific to insights derived from ACD"""
-#INSIGHT_ID_SYSTEM_URN = "urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0"
+from typing import List
+from typing import NamedTuple
+from typing import Optional
+from typing import Set
+
+
+class NlpCui(NamedTuple):
+    """Models concepts returned by a very simple NLP capable of cui detection"""
+
+    cui: str
+    covered_text: str
+    begin: int
+    end: int
+    preferred_name: str
+    types: Set[str]
+    snomed_ct: Optional[Set[str]]
+    negated: bool = False
+
+
+class NlpResponse(NamedTuple):
+    """Models a response from a very simple NLP engine"""
+
+    nlp_cuis: List[NlpCui]

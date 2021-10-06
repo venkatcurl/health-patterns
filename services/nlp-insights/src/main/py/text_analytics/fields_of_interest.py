@@ -19,6 +19,9 @@ A CodableConcept has an optional coding field and an optional text field.
 The module contains utilities to determine which of these concepts can be used
 to produce additional insights. Running NLP over the coding text may produce
 additional codes that are not included in the original FHIR resource.
+
+References to the codeable concept may be used to update the concept with discovered
+insights.
 """
 from enum import Enum
 from typing import Callable
@@ -26,7 +29,6 @@ from typing import Dict
 from typing import Iterable
 from typing import NamedTuple
 from typing import Optional
-from typing import Type
 
 from fhir.resources.allergyintolerance import AllergyIntolerance
 from fhir.resources.allergyintolerance import AllergyIntoleranceReaction

@@ -28,7 +28,7 @@ INSIGHT_URL = "http://ibm.com/fhir/cdm/StructureDefinition/insight"  # insight t
 INSIGHT_BASED_ON_URL = "http://ibm.com/fhir/cdm/StructureDefinition/reference"     # link to the unstructured report (FHIR DiagnosticReport)
 INSIGHT_DETAIL_URL = "http://ibm.com/fhir/cdm/StructureDefinition/insight-detail"  # a derived insight (general, complex extension)
 INSIGHT_ID_URL = "http://ibm.com/fhir/cdm/StructureDefinition/insight-id"  # ID of the insight entry
-INSIGHT_ACD_OUTPUT_URL = "http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output"     # full ACD output
+INSIGHT_NLP_OUTPUT_URL = "http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output"     # full ACD output
 INSIGHT_REFERENCE_PATH_URL = "http://ibm.com/fhir/cdm/StructureDefinition/reference-path"   # path in resource insight was used for
 
 INSIGHT_RESULT_URL = "http://ibm.com/fhir/cdm/StructureDefinition/insight-result"  # insight result

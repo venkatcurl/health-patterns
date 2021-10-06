@@ -10,7 +10,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License. 
+# limitations under the License.
 
 from typing import List
 from typing import Optional
@@ -21,22 +21,25 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
 
-from text_analytics.acd.fhir_enrichment.insights.create_condition_insights import (
+from text_analytics.acd.fhir_enrichment.insights.create_condition import (
     create_conditions_from_insights,
 )
-from text_analytics.acd.fhir_enrichment.insights.create_medication_insights import (
+from text_analytics.acd.fhir_enrichment.insights.create_medication import (
     create_med_statements_from_insights,
 )
 from text_analytics.acd.fhir_enrichment.insights.update_codeable_concepts import (
     update_codeable_concepts_and_meta_with_insights,
-    CodeableConceptAcdInsight,
+    AcdConceptRef,
 )
 from text_analytics.fhir_object_utils import create_transaction_bundle, BundleEntryDfn
+from text_analytics.nlp_config import NlpConfig, ACD_NLP_CONFIG
 from text_analytics.types import UnstructuredFhirResourceType
 
 
 def enrich_resource_codeable_concepts(
-    concept_insights: List[CodeableConceptAcdInsight], fhir_resource: Resource
+    concept_insights: List[AcdConceptRef],
+    fhir_resource: Resource,
+    nlp_config: NlpConfig = ACD_NLP_CONFIG,
 ) -> Optional[Bundle]:
     """Creates a bundle containing the fhir resource that includes additional codeings
 
@@ -50,7 +53,7 @@ def enrich_resource_codeable_concepts(
              enriched
     """
     num_updates = update_codeable_concepts_and_meta_with_insights(
-        fhir_resource, concept_insights
+        fhir_resource, concept_insights, nlp_config
     )
 
     if num_updates > 0:
@@ -68,7 +71,9 @@ def enrich_resource_codeable_concepts(
 
 
 def create_new_resources_from_insights(
-    source_resource: UnstructuredFhirResourceType, insights: acd.ContainerAnnotation
+    source_resource: UnstructuredFhirResourceType,
+    insights: acd.ContainerAnnotation,
+    nlp_config: NlpConfig = ACD_NLP_CONFIG,
 ) -> Optional[Bundle]:
     """Creates a bundle of new (derived) resources from ACD insights
 
@@ -80,13 +85,14 @@ def create_new_resources_from_insights(
     Args:
         source resource - the resource that caused the insights to be created
         insights - response from ACD for free text in the resource
+        nlp_config - nlp configuration
 
     Returns a bundle of derived resources, or None if no resources were derived
     """
-    conditions = create_conditions_from_insights(source_resource, insights)
-    med_statements = create_med_statements_from_insights(source_resource, insights)
+    conditions = create_conditions_from_insights(source_resource, insights, nlp_config)
+    med_statements = create_med_statements_from_insights(source_resource, insights, nlp_config)
 
-    if (not conditions and not med_statements):
+    if not conditions and not med_statements:
         return None
 
     bundle_entries = []

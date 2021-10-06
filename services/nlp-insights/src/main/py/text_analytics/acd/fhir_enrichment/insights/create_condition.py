@@ -26,16 +26,10 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
 from ibm_whcs_sdk.annotator_for_clinical_data import ContainerAnnotation
 
 from text_analytics import fhir_object_utils
-from text_analytics.acd.fhir_enrichment.insights.insight_constants import (
-    INSIGHT_ID_SYSTEM_URN,
-)
 from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
 from text_analytics.acd.fhir_enrichment.utils.acd_utils import filter_attribute_values
 from text_analytics.acd.fhir_enrichment.utils.enrichment_constants import (
     ANNOTATION_TYPE_CONDITION,
-)
-from text_analytics.acd.fhir_enrichment.utils.fhir_object_utils import (
-    create_ACD_output_extension,
 )
 from text_analytics.acd.fhir_enrichment.utils.fhir_object_utils import (
     get_diagnosis_confidences,
@@ -47,18 +41,22 @@ from text_analytics.fhir_object_utils import (
 )
 from text_analytics.insight_id import insight_id_maker
 from text_analytics.insight_source import UnstructuredSource
+from text_analytics.nlp_config import NlpConfig
 from text_analytics.span import Span
 from text_analytics.types import UnstructuredFhirResourceType
 
 
 def create_conditions_from_insights(
-    source_resource: UnstructuredFhirResourceType, acd_output: ContainerAnnotation
+    source_resource: UnstructuredFhirResourceType,
+    acd_output: ContainerAnnotation,
+    nlp_config: NlpConfig,
 ) -> Optional[List[Condition]]:
     """For the provided resource, and ACD output, create FHIR condition resources
 
     Args:
         source-resource - the resource that NLP was run over (must be unstructured)
         acd_output - the acd output
+        nlp_config - nlp configuration
 
     Returns conditions derived by NLP, or None if there are no conditions
     """
@@ -88,6 +86,7 @@ def create_conditions_from_insights(
                     concept,
                     acd_output,
                     next(id_maker),
+                    nlp_config,
                 )
 
     if not condition_tracker:
@@ -131,10 +130,11 @@ def _add_insight_to_condition(
     concept: acd.Concept,
     acd_output: acd.ContainerAnnotation,
     insight_id_string: str,
+    nlp_config: NlpConfig,
 ) -> None:
     """Adds data from the insight to the condition"""
     insight_id_ext = create_insight_id_extension(
-        insight_id_string, INSIGHT_ID_SYSTEM_URN
+        insight_id_string, nlp_config.nlp_system
     )
 
     source = UnstructuredSource(
@@ -142,16 +142,15 @@ def _add_insight_to_condition(
         text_span=Span(begin=attr.begin, end=attr.end, covered_text=attr.covered_text),
     )
 
-    if attr.insight_model_data:
-        confidences = get_diagnosis_confidences(attr.insight_model_data)
-    else:
-        confidences = None
+    confidences = get_diagnosis_confidences(attr.insight_model_data)
+
+    nlp_output_ext = nlp_config.create_nlp_output_extension(acd_output)
 
     unstructured_insight_detail = (
         create_derived_from_unstructured_insight_detail_extension(
             source=source,
             confidences=confidences,
-            nlp_extensions=[create_ACD_output_extension(acd_output)],
+            nlp_extensions=[nlp_output_ext] if nlp_output_ext else None,
         )
     )
 

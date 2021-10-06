@@ -14,11 +14,16 @@
 """Utilities for building and manipulating FHIR objects"""
 
 
+from collections import defaultdict
 import json  # noqa: F401 pylint: disable=unused-import
+from typing import DefaultDict
+from typing import Iterable
 from typing import List
 from typing import NamedTuple
 from typing import Optional
+from typing import Set
 
+from fhir.resources.attachment import Attachment
 from fhir.resources.bundle import Bundle
 from fhir.resources.bundle import BundleEntry, BundleEntryRequest
 from fhir.resources.codeableconcept import CodeableConcept
@@ -361,6 +366,25 @@ def create_derived_by_nlp_extension() -> Extension:
     return classification_ext
 
 
+def create_nlp_output_extension(output_url: str) -> Extension:
+    """
+    Creates an extension documenting the location of the NLP engine's output.
+
+    Returns: NLP output extension
+
+    Example:
+    >>> ext = create_nlp_output_extension("uri://path/abc-123.json")
+    >>> print(ext.json(indent=2))
+
+
+    """
+    attachment = Attachment.construct(url=output_url)
+    nlp_output_ext = Extension.construct(
+        url=insight_constants.INSIGHT_NLP_OUTPUT_URL, valueAttachment=attachment
+    )
+    return nlp_output_ext
+
+
 def create_derived_from_concept_insight_detail_extension(
     reference_path_ext: Extension,
     nlp_extensions: Optional[List[Extension]] = None,
@@ -604,7 +628,6 @@ def create_insight_id_extension(
     return insight_id_ext
 
 
-# formerly create_derived_resource_extension
 def append_derived_by_nlp_extension(resource: Resource) -> None:
     """Append resource-level extension to resource, indicating resource was derived
 
@@ -959,3 +982,57 @@ def create_reference_to_resource_extension(resource: Resource) -> Extension:
     based_on_extension.url = insight_constants.INSIGHT_BASED_ON_URL
     based_on_extension.valueReference = reference
     return based_on_extension
+
+
+def get_existing_codes_by_system(
+    codings: Iterable[Coding],
+) -> DefaultDict[str, Set[str]]:
+    """Returns a mutable map of system to list of code values
+
+    The returned map is a (mutable) default dict, and will contain empty list for coding
+    systems that do not exist in the list of codings.
+
+    Args: codings -  coding objects
+    Returns: map of coding system to set of contained codes
+    """
+    existing_codes: DefaultDict[str, Set[str]] = defaultdict(set)
+    for code in codings:
+        if code.system:
+            if code.system not in existing_codes:
+                existing_codes[code.system] = set()
+
+            existing_codes[code.system].add(code.code)
+
+    return existing_codes
+
+
+def append_insight_with_path_expr_to_resource_meta(
+    fhir_resource: Resource,
+    insight_id: str,
+    system: str,
+    fhir_path: str,
+    nlp_output_uri: Optional[str] = None,
+) -> None:
+    """Updates the meta section of a resource with extensions for the insight
+
+    Args:
+        fhir_resource - resource to update meta
+        insight_id - identifier for the new insight
+        system - the nlp system used to compute the insight id
+        fhir_path - location of the insight
+        nlp_output_uri - (optional) where is the NLP output stored
+    """
+    insight_id_ext = create_insight_id_extension(insight_id, system)
+
+    reference_path_ext = create_reference_path_extension(fhir_path)
+
+    if nlp_output_uri:
+        evaluated_output_ext = create_nlp_output_extension(nlp_output_uri)
+    else:
+        evaluated_output_ext = None
+
+    insight_detail = create_derived_from_concept_insight_detail_extension(
+        reference_path_ext=reference_path_ext, nlp_extensions=[evaluated_output_ext]
+    )
+
+    add_insight_to_meta(fhir_resource, insight_id_ext, insight_detail)
