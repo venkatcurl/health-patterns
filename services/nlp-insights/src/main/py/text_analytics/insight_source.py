@@ -18,11 +18,15 @@ Defines source information for an insight
 from typing import NamedTuple
 from fhir.resources.resource import Resource
 from text_analytics.span import Span
-
+from text_analytics.unstructured import UnstructuredText
 
 class UnstructuredSource(NamedTuple):
-    """Location of unstructured data used to produce an insight"""
+    """Location of unstructured data used to produce an insight
+    
+       This unstructured data is expected to be attachment text,
+       such as clinical notes.
+    """
 
-    resource: Resource
+    text_source: UnstructuredText
     text_span: Span
 

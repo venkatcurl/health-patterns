@@ -30,6 +30,7 @@ class NlpConfig(NamedTuple):
 
     nlp_system: str
     get_nlp_output_loc: Callable[[Any], Optional[str]]
+    insight_id_start: int = 1
     
     def create_nlp_output_extension(self, nlp_output: Any) -> Optional[Extension]:
         """Creates an NLP output extension

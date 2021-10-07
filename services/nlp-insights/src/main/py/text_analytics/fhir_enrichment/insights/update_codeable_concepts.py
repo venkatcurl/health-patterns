@@ -151,11 +151,12 @@ def update_codeable_concepts_and_meta_with_insights(
         fhir_resource - the fhir resource to update the meta
         concept_insights - collection of concepts to enrich with insights.
                            These concepts should be contained within the FHIR resource.
+        nlp_config - the nlp configuration
 
     Returns: total number of derived codings added to the resource, across all provided
              codeable concepts.
     """
-    id_maker = insight_id_maker()
+    id_maker = insight_id_maker(start=nlp_config.insight_id_start)
 
     num_codes_added: int = 0
 

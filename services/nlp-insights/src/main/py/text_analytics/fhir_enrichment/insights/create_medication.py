@@ -26,8 +26,8 @@ from text_analytics.insight_source import UnstructuredSource
 from text_analytics.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
 from text_analytics.nlp_reponse import NlpResponse, NlpCui
 from text_analytics.span import Span
-from text_analytics.types import UnstructuredFhirResourceType
 from text_analytics.umls.semtype_lookup import resource_relevant_to_any_type_names
+from text_analytics.unstructured import UnstructuredText
 
 
 def _add_insight_codings_to_medication_stmt(
@@ -71,7 +71,7 @@ def _add_insight_codings_to_medication_stmt(
 
 
 def _add_insight_to_medication_stmt(
-    source_resource: UnstructuredFhirResourceType,
+    text_source: UnstructuredText,
     medication_stmt: MedicationStatement,
     nlp_cui: NlpCui,
     insight_id: str,
@@ -83,7 +83,7 @@ def _add_insight_to_medication_stmt(
     )
 
     source = UnstructuredSource(
-        resource=source_resource,
+        text_source=text_source,
         text_span=Span(
             begin=nlp_cui.begin, end=nlp_cui.end, covered_text=nlp_cui.covered_text
         ),
@@ -129,15 +129,15 @@ def _create_minimum_medication_statement(
     )
 
 
-def create_medication_from_insights(
-    source_resource: UnstructuredFhirResourceType,
+def create_med_statements_from_insights(
+    text_source: UnstructuredText,
     nlp_response: NlpResponse,
     nlp_config: NlpConfig = QUICK_UMLS_NLP_CONFIG,
 ) -> Optional[List[MedicationStatement]]:
-    """For the provided resource, and NLP output, create FHIR medication statement resources
+    """For the text source and NLP output, create FHIR medication statement resources
 
     Args:
-        source-resource - the resource that NLP was run over (must be unstructured)
+        text_source - the resource text that NLP was run over
         nlp_response - the nlp concepts
         nlp_conifg - nlp configuration
 
@@ -150,17 +150,17 @@ def create_medication_from_insights(
         if resource_relevant_to_any_type_names(MedicationStatement, nlp_cui.types):
             if nlp_cui.cui not in medication_tracker:
                 new_medication_stmt = _create_minimum_medication_statement(
-                    subject=source_resource.subject, nlp_cui=nlp_cui
+                    subject=text_source.source_resource.subject, nlp_cui=nlp_cui
                 )
                 medication_tracker[nlp_cui.cui] = TrackerEntry(
                     fhir_resource=new_medication_stmt,
-                    id_maker=insight_id_maker(),
+                    id_maker=insight_id_maker(start=nlp_config.insight_id_start),
                 )
 
             med_stmt, id_maker = medication_tracker[nlp_cui.cui]
 
             _add_insight_to_medication_stmt(
-                source_resource,
+                text_source,
                 med_stmt,
                 nlp_cui,
                 next(id_maker),

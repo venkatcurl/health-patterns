@@ -21,7 +21,6 @@ from fhir.resources.dosage import Dosage, DosageDoseAndRate
 from fhir.resources.medicationstatement import MedicationStatement
 from fhir.resources.quantity import Quantity
 from fhir.resources.reference import Reference
-from fhir.resources.resource import Resource
 from fhir.resources.timing import Timing
 from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
@@ -49,21 +48,21 @@ from text_analytics.insight_id import insight_id_maker
 from text_analytics.insight_source import UnstructuredSource
 from text_analytics.nlp_config import NlpConfig
 from text_analytics.span import Span
-from text_analytics.types import UnstructuredFhirResourceType
+from text_analytics.unstructured import UnstructuredText
 
 
 logger = logging.getLogger("whpa-cdp-lib-fhir-enrichment")
 
 
 def create_med_statements_from_insights(
-    source_resource: UnstructuredFhirResourceType,
+    text_source: UnstructuredText,
     acd_output: acd.ContainerAnnotation,
     nlp_config: NlpConfig
 ) -> Optional[List[MedicationStatement]]:
-    """Creates medication statements, given acd data from the unstructured source resource
+    """Creates medication statements, given acd data from the text source
 
     Args:
-        source-resource - the resource that NLP was run over (must be unstructured)
+        text_source - the resource that NLP was run over (must be unstructured)
         acd_output - the acd output
 
     Returns medication statements derived from NLP, or None if there are no such statements
@@ -82,15 +81,15 @@ def create_med_statements_from_insights(
             if cui not in med_statement_tracker:
                 med_statement_tracker[cui] = TrackerEntry(
                     fhir_resource=_create_minimum_medication_statement(
-                        source_resource.subject, medInd
+                        text_source.source_resource.subject, medInd
                     ),
-                    id_maker=insight_id_maker(),
+                    id_maker=insight_id_maker(start=nlp_config.insight_id_start),
                 )
 
             med_statement, id_maker = med_statement_tracker[cui]
 
             _add_insight_to_medication_statement(
-                source_resource,
+                text_source,
                 med_statement,
                 attr,
                 medInd,
@@ -136,7 +135,7 @@ def _get_annotation_for_attribute(
 
 
 def _add_insight_to_medication_statement(
-    source_resource: Resource,
+    text_source: UnstructuredText,
     med_statement: MedicationStatement,
     attr: acd.AttributeValueAnnotation,
     medInd: acd.MedicationAnnotation,
@@ -151,7 +150,7 @@ def _add_insight_to_medication_statement(
     )
 
     source = UnstructuredSource(
-        resource=source_resource,
+        text_source=text_source,
         text_span=Span(begin=attr.begin, end=attr.end, covered_text=attr.covered_text),
     )
 

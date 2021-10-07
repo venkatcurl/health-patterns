@@ -454,10 +454,11 @@ def create_derived_from_unstructured_insight_detail_extension(
 
     Example:
     >>> visit_code = CodeableConcept.construct(text='Mental status Narrative')
+    >>> report_text = 'crazy, no other way to describe'
     >>> report = DiagnosticReport.construct(id='12345',
     ...                                     code=visit_code,
-    ...                                     text='crazy')
-    >>> source = UnstructuredSource(resource=report,
+    ...                                     text=report_text)
+    >>> source = UnstructuredSource(text_source=UnstructuredText(report, "path_to_text", report_text),
     ...                             text_span=Span(begin=0,end=5,covered_text='crazy'))
     >>> confidences = [ create_confidence_extension('Suspected Score', .99) ]
     >>> nlp_extensions = [
@@ -533,7 +534,7 @@ def create_derived_from_unstructured_insight_detail_extension(
     insight_results.extension = [insight_span_ext]
 
     # Create reference to unstructured report
-    report_reference_ext = create_reference_to_resource_extension(source.resource)
+    report_reference_ext = create_reference_to_resource_extension(source.text_source.source_resource)
 
     insight_detail = Extension.construct()
     insight_detail.url = insight_constants.INSIGHT_DETAIL_URL
@@ -720,16 +721,17 @@ def add_insight_to_meta(
     Example:
     Create Example Resource:
     >>> visit_code = CodeableConcept.construct(text='Mental status Narrative')
+    >>> report_text = 'crazy, totally'
     >>> report = DiagnosticReport.construct(id='12345',
     ...                                     code=visit_code,
-    ...                                     text='crazy',
+    ...                                     text=report_text,
     ...                                     status='final')
 
     Create Insight ID extension:
     >>> insight_id = create_insight_id_extension('insight-1', 'urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0')
 
     Create Insight detail Extension:
-    >>> source = UnstructuredSource(resource=report,
+    >>> source = UnstructuredSource(text_source=UnstructuredText(report, "path_to_text", report_text)
     ...                             text_span=Span(begin=0,end=5,covered_text='crazy'))
     >>> confidences = [ create_confidence_extension('Suspected Score', .99) ]
     >>> nlp_extensions = [

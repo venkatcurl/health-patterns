@@ -149,7 +149,7 @@ def update_codeable_concepts_and_meta_with_insights(
     Returns: total number of derived codings added to the resource, across all provided
              codeable concepts.
     """
-    id_maker = insight_id_maker()
+    id_maker = insight_id_maker(start=nlp_config.insight_id_start)
 
     num_codes_added: int = 0
 

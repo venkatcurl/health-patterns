@@ -21,31 +21,31 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
 
-from text_analytics.acd.fhir_enrichment.insights.create_condition import (
+from text_analytics.fhir_enrichment.insights.create_condition import (
     create_conditions_from_insights,
 )
-from text_analytics.acd.fhir_enrichment.insights.create_medication import (
+from text_analytics.fhir_enrichment.insights.create_medication import (
     create_med_statements_from_insights,
 )
-from text_analytics.acd.fhir_enrichment.insights.update_codeable_concepts import (
+from text_analytics.fhir_enrichment.insights.update_codeable_concepts import (
     update_codeable_concepts_and_meta_with_insights,
-    AcdConceptRef,
+    NlpConceptRef,
 )
 from text_analytics.fhir_object_utils import create_transaction_bundle, BundleEntryDfn
-from text_analytics.nlp_config import NlpConfig, ACD_NLP_CONFIG
-from text_analytics.unstructured import UnstructuredText
+from text_analytics.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
+from text_analytics.unstructured import UnstructuredFhirResourceType
 
 
 def enrich_resource_codeable_concepts(
-    concept_insights: List[AcdConceptRef],
+    concept_insights: List[NlpConceptRef],
     fhir_resource: Resource,
-    nlp_config: NlpConfig = ACD_NLP_CONFIG,
+    nlp_config: NlpConfig = QUICK_UMLS_NLP_CONFIG,
 ) -> Optional[Bundle]:
     """Creates a bundle containing the fhir resource that includes additional codeings
 
     Args:
         concept_insights - collection of bindings between codeable concepts to enrich
-                           and ACD/NLP analysis of those insights
+                           and NLP analysis of those insights
         fhir_resource - the resource that contains the codeable concepts referenced by
                         the concept insights
 
@@ -71,9 +71,9 @@ def enrich_resource_codeable_concepts(
 
 
 def create_new_resources_from_insights(
-    text_source: UnstructuredText,
+    source_resource: UnstructuredFhirResourceType,
     insights: acd.ContainerAnnotation,
-    nlp_config: NlpConfig = ACD_NLP_CONFIG,
+    nlp_config: NlpConfig = QUICK_UMLS_NLP_CONFIG,
 ) -> Optional[Bundle]:
     """Creates a bundle of new (derived) resources from ACD insights
 
@@ -84,13 +84,15 @@ def create_new_resources_from_insights(
 
     Args:
         source resource - the resource that caused the insights to be created
-        insights - response from ACD for free text in the resource
+        insights - response from NLP for free text in the resource
         nlp_config - nlp configuration
 
     Returns a bundle of derived resources, or None if no resources were derived
     """
-    conditions = create_conditions_from_insights(text_source, insights, nlp_config)
-    med_statements = create_med_statements_from_insights(text_source, insights, nlp_config)
+    conditions = create_conditions_from_insights(source_resource, insights, nlp_config)
+    med_statements = create_med_statements_from_insights(
+        source_resource, insights, nlp_config
+    )
 
     if not conditions and not med_statements:
         return None

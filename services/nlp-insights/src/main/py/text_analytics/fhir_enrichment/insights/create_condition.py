@@ -25,8 +25,8 @@ from text_analytics.insight_source import UnstructuredSource
 from text_analytics.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
 from text_analytics.nlp_reponse import NlpResponse, NlpCui
 from text_analytics.span import Span
-from text_analytics.types import UnstructuredFhirResourceType
 from text_analytics.umls.semtype_lookup import resource_relevant_to_any_type_names
+from text_analytics.unstructured import UnstructuredText
 
 
 def _add_insight_codings_to_condition(condition: Condition, nlp_cui: NlpCui) -> None:
@@ -68,7 +68,7 @@ def _add_insight_codings_to_condition(condition: Condition, nlp_cui: NlpCui) -> 
 
 
 def _add_insight_to_condition(
-    source_resource: UnstructuredFhirResourceType,
+    text_source: UnstructuredText,
     condition: Condition,
     nlp_cui: NlpCui,
     insight_id: str,
@@ -80,7 +80,7 @@ def _add_insight_to_condition(
     )
 
     source = UnstructuredSource(
-        resource=source_resource,
+        text_source=text_source,
         text_span=Span(
             begin=nlp_cui.begin, end=nlp_cui.end, covered_text=nlp_cui.covered_text
         ),
@@ -104,14 +104,14 @@ def _add_insight_to_condition(
 
 
 def create_conditions_from_insights(
-    source_resource: UnstructuredFhirResourceType,
+    text_source: UnstructuredText,
     nlp_response: NlpResponse,
     nlp_config: NlpConfig = QUICK_UMLS_NLP_CONFIG,
 ) -> Optional[List[Condition]]:
-    """For the provided resource, and NLP output, create FHIR condition resources
+    """For the text source and NLP output, create FHIR condition resources
 
     Args:
-        source-resource - the resource that NLP was run over (must be unstructured)
+        text_source - the text that NLP was run over
         nlp_response - the nlp response
         nlp_config - NLP configuration
 
@@ -125,14 +125,14 @@ def create_conditions_from_insights(
         if resource_relevant_to_any_type_names(Condition, nlp_cui.types):
             if nlp_cui.cui not in condition_tracker:
                 condition_tracker[nlp_cui.cui] = TrackerEntry(
-                    fhir_resource=Condition.construct(subject=source_resource.subject),
-                    id_maker=insight_id_maker(),
+                    fhir_resource=Condition.construct(subject=text_source.source_resource.subject),
+                    id_maker=insight_id_maker(start=nlp_config.insight_id_start),
                 )
 
             condition, id_maker = condition_tracker[nlp_cui.cui]
 
             _add_insight_to_condition(
-                source_resource,
+                text_source,
                 condition,
                 nlp_cui,
                 next(id_maker),

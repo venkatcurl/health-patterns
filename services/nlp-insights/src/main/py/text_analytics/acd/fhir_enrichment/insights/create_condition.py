@@ -43,18 +43,18 @@ from text_analytics.insight_id import insight_id_maker
 from text_analytics.insight_source import UnstructuredSource
 from text_analytics.nlp_config import NlpConfig
 from text_analytics.span import Span
-from text_analytics.types import UnstructuredFhirResourceType
+from text_analytics.unstructured import UnstructuredText
 
 
 def create_conditions_from_insights(
-    source_resource: UnstructuredFhirResourceType,
+    text_source: UnstructuredText,
     acd_output: ContainerAnnotation,
     nlp_config: NlpConfig,
 ) -> Optional[List[Condition]]:
-    """For the provided resource, and ACD output, create FHIR condition resources
+    """For the provided source and ACD output, create FHIR condition resources
 
     Args:
-        source-resource - the resource that NLP was run over (must be unstructured)
+        text_source - the text that NLP was run over
         acd_output - the acd output
         nlp_config - nlp configuration
 
@@ -72,15 +72,15 @@ def create_conditions_from_insights(
                 if concept.cui not in condition_tracker:
                     condition_tracker[concept.cui] = TrackerEntry(
                         fhir_resource=Condition.construct(
-                            subject=source_resource.subject
+                            subject=text_source.source_resource.subject
                         ),
-                        id_maker=insight_id_maker(),
+                        id_maker=insight_id_maker(start=nlp_config.insight_id_start),
                     )
 
                 condition, id_maker = condition_tracker[concept.cui]
 
                 _add_insight_to_condition(
-                    source_resource,
+                    text_source,
                     condition,
                     attr,
                     concept,
@@ -124,7 +124,7 @@ def _get_concept_for_attribute(
 
 
 def _add_insight_to_condition(
-    source_resource: Resource,
+    text_source: UnstructuredText,
     condition: Condition,
     attr: acd.AttributeValueAnnotation,
     concept: acd.Concept,
@@ -138,7 +138,7 @@ def _add_insight_to_condition(
     )
 
     source = UnstructuredSource(
-        resource=source_resource,
+        text_source=text_source,
         text_span=Span(begin=attr.begin, end=attr.end, covered_text=attr.covered_text),
     )
 
