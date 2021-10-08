@@ -10,23 +10,23 @@ from typing import NamedTuple
 from fhir.resources.resource import Resource
 import requests
 
-from text_analytics.abstract_nlp_service import NLPService
-from text_analytics.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.fhir_enrichment.insights.create_condition import (
+from text_analytics.fhir.fhir_object_utils import BundleEntryDfn
+from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.nlp.abstract_nlp_service import NLPService
+from text_analytics.nlp.nlp_config import QUICK_UMLS_NLP_CONFIG
+from text_analytics.nlp.nlp_reponse import NlpResponse, NlpCui
+from text_analytics.nlp.quickUMLS.fhir_enrichment.insights.create_condition import (
     create_conditions_from_insights,
 )
-from text_analytics.fhir_enrichment.insights.create_medication import (
+from text_analytics.nlp.quickUMLS.fhir_enrichment.insights.create_medication import (
     create_med_statements_from_insights,
 )
-from text_analytics.fhir_enrichment.insights.update_codeable_concepts import (
+from text_analytics.nlp.quickUMLS.fhir_enrichment.insights.update_codeable_concepts import (
     update_codeable_concepts_and_meta_with_insights,
     NlpConceptRef,
 )
-from text_analytics.fhir_object_utils import BundleEntryDfn
-from text_analytics.nlp_config import QUICK_UMLS_NLP_CONFIG
-from text_analytics.nlp_reponse import NlpResponse, NlpCui
 from text_analytics.umls.semtype_lookup import get_names_from_type_ids
-from text_analytics.unstructured import UnstructuredText
 
 
 logger = logging.getLogger(__name__)

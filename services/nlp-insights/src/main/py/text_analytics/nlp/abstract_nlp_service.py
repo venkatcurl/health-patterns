@@ -1,15 +1,22 @@
 from abc import ABC, abstractmethod
 from typing import List
-from typing import Optional
 
 from fhir.resources.resource import Resource
 
-from text_analytics.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.fhir_object_utils import BundleEntryDfn
-from text_analytics.unstructured import UnstructuredText
+from text_analytics.fhir.fhir_object_utils import BundleEntryDfn
+from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
+from text_analytics.insight_source.unstructured_text import UnstructuredText
 
 
 class NLPService(ABC):
+    """Base NLP service
+
+    An NLP service has two basic functions:
+    - Given unstructured text, derive new resources
+    - Given a reference to a concept (possibly with adjusted text for context), use the
+      text to derive additional codings.
+    """
+
     @abstractmethod
     def derive_new_resources(
         self, notes: List[UnstructuredText]

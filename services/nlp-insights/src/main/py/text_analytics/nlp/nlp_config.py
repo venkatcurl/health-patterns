@@ -22,7 +22,7 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
 
-from text_analytics import fhir_object_utils
+from text_analytics.fhir import fhir_object_utils
 
 
 class NlpConfig(NamedTuple):
@@ -31,12 +31,12 @@ class NlpConfig(NamedTuple):
     nlp_system: str
     get_nlp_output_loc: Callable[[Any], Optional[str]]
     insight_id_start: int = 1
-    
+
     def create_nlp_output_extension(self, nlp_output: Any) -> Optional[Extension]:
         """Creates an NLP output extension
-        
-           This uses the get_nlp_output_loc method to build the extension.
-           If the method does not supply a location, None is returned
+
+        This uses the get_nlp_output_loc method to build the extension.
+        If the method does not supply a location, None is returned
         """
         nlp_output_url = self.get_nlp_output_loc(nlp_output)
         if nlp_output_url:

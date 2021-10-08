@@ -19,13 +19,16 @@ from typing import Set
 
 from fhir.resources.resource import Resource
 
-from text_analytics import fhir_object_utils
-from text_analytics.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.fields_of_interest import CodeableConceptRef, CodeableConceptRefType
-from text_analytics.insight_constants import UMLS_URL, SNOMED_URL
-from text_analytics.insight_id import insight_id_maker
-from text_analytics.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
-from text_analytics.nlp_reponse import NlpResponse, NlpCui
+from text_analytics.fhir import fhir_object_utils
+from text_analytics.insight.insight_constants import UMLS_URL, SNOMED_URL
+from text_analytics.insight.insight_id import insight_id_maker
+from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
+from text_analytics.insight_source.fields_of_interest import (
+    CodeableConceptRef,
+    CodeableConceptRefType,
+)
+from text_analytics.nlp.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
+from text_analytics.nlp.nlp_reponse import NlpResponse, NlpCui
 from text_analytics.umls.semtype_lookup import ref_type_relevant_to_any_type_names
 
 

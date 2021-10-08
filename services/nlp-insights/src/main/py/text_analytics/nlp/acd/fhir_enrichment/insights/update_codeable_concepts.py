@@ -19,6 +19,7 @@ from typing import NamedTuple
 from typing import Optional
 
 from fhir.resources.allergyintolerance import AllergyIntolerance
+from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.condition import Condition
 from fhir.resources.immunization import Immunization
 from fhir.resources.resource import Resource
@@ -26,13 +27,15 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
 
-from text_analytics import fhir_object_utils
-from text_analytics.acd.fhir_enrichment.utils import enrichment_constants
-from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
-from text_analytics.acd.fhir_enrichment.utils.acd_utils import filter_attribute_values
-from text_analytics.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.insight_id import insight_id_maker
-from text_analytics.nlp_config import NlpConfig
+from text_analytics.fhir import fhir_object_utils
+from text_analytics.insight import insight_constants
+from text_analytics.insight.insight_id import insight_id_maker
+from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
+from text_analytics.nlp.acd.fhir_enrichment.insights import enrichment_constants
+from text_analytics.nlp.acd.fhir_enrichment.utils.acd_utils import (
+    filter_attribute_values,
+)
+from text_analytics.nlp.nlp_config import NlpConfig
 
 
 class AcdConceptRef(NamedTuple):
@@ -108,10 +111,8 @@ def _add_codeable_concept_insight(
         ):
             acd_concept: acd.Concept = _get_source_for_attribute(attr, concepts)
 
-            num_codes_appended: int = (
-                acd_fhir_utils.append_codings_with_nlp_derived_extension(
-                    acd_concept, concept_ref.code_ref
-                )
+            num_codes_appended: int = _append_codings_with_nlp_derived_extension(
+                acd_concept, concept_ref.code_ref
             )
 
             if num_codes_appended > 0:
@@ -125,6 +126,85 @@ def _add_codeable_concept_insight(
                 )
 
     return total_num_codes_added
+
+
+def _append_coding_entries_with_extension(
+    codeable_concept: CodeableConcept, system: str, csv_code_id: str
+) -> int:
+    """Separates each code from a csv string and appends the code to the codeable concept
+
+    Args:
+        codeable_concept - concept to update
+        system - system to use for the code(s)
+        csv_code_id - code(s) to append
+    Returns: number of codes added
+    """
+    codes_added = 0
+    for code_id in csv_code_id.split(","):
+        codes_added += fhir_object_utils.append_derived_by_nlp_coding(
+            codeable_concept, system, code_id
+        )
+
+    return codes_added
+
+
+def _append_codings_with_nlp_derived_extension(
+    acd_concept: acd.Concept, codeable_concept: CodeableConcept
+) -> int:
+    """
+     Adds codes from the concept to the codeable_concept.
+     Adds extension indicating the code is derived.
+     Parameters:
+        concept - ACD concept
+        codeable_concept - FHIR codeable concept the codes will be added to
+
+    Returns:
+        number of codes added
+    """
+    codes_added : int = 0
+    
+    if acd_concept.cui is not None:
+        # For CUIs, we do not handle comma-delimited values (have not seen that we ever have more than one value)
+        # We use the preferred name from UMLS for the display text
+        codes_added += fhir_object_utils.append_derived_by_nlp_coding(
+            codeable_concept,
+            insight_constants.UMLS_URL,
+            acd_concept.cui,
+            acd_concept.preferred_name,
+        )
+
+    if acd_concept.snomed_concept_id is not None:
+        codes_added += _append_coding_entries_with_extension(
+            codeable_concept,
+            insight_constants.SNOMED_URL,
+            acd_concept.snomed_concept_id,
+        )
+    if acd_concept.nci_code is not None:
+        codes_added += _append_coding_entries_with_extension(
+            codeable_concept, insight_constants.NCI_URL, acd_concept.nci_code
+        )
+    if acd_concept.loinc_id is not None:
+        codes_added += _append_coding_entries_with_extension(
+            codeable_concept, insight_constants.LOINC_URL, acd_concept.loinc_id
+        )
+    if acd_concept.mesh_id is not None:
+        codes_added += _append_coding_entries_with_extension(
+            codeable_concept, insight_constants.MESH_URL, acd_concept.mesh_id
+        )
+    if acd_concept.icd9_code is not None:
+        codes_added += _append_coding_entries_with_extension(
+            codeable_concept, insight_constants.ICD9_URL, acd_concept.icd9_code
+        )
+    if acd_concept.icd10_code is not None:
+        codes_added += _append_coding_entries_with_extension(
+            codeable_concept, insight_constants.ICD10_URL, acd_concept.icd10_code
+        )
+    if acd_concept.rx_norm_id is not None:
+        codes_added += _append_coding_entries_with_extension(
+            codeable_concept, insight_constants.RXNORM_URL, acd_concept.rx_norm_id
+        )
+
+    return codes_added
 
 
 def update_codeable_concepts_and_meta_with_insights(

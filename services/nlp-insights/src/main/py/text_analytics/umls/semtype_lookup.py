@@ -33,7 +33,7 @@ from fhir.resources.condition import Condition
 from fhir.resources.medicationstatement import MedicationStatement
 
 from fhir.resources.resource import Resource
-from text_analytics.fields_of_interest import CodeableConceptRefType
+from text_analytics.insight_source.fields_of_interest import CodeableConceptRefType
 
 
 _type_id_to_type_name = {

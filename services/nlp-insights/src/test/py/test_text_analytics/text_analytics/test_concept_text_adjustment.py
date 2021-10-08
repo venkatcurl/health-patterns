@@ -18,7 +18,7 @@ Test concept text adjustment
 import doctest
 import unittest
 
-import text_analytics.concept_text_adjustment
+import text_analytics.insight_source.concept_text_adjustment
 
 
 class TestConceptTextAdjustment(unittest.TestCase):
@@ -39,7 +39,7 @@ def load_tests(loader, tests, pattern):
        returned. It does work with the pydev test_text_analytics runner and the unittest CLI
     """
     del loader, pattern  # not used
-    tests.addTests(doctest.DocTestSuite(text_analytics.concept_text_adjustment))
+    tests.addTests(doctest.DocTestSuite(text_analytics.insight_source.concept_text_adjustment))
     tests.addTests(unittest.makeSuite(TestConceptTextAdjustment))
     return tests
 

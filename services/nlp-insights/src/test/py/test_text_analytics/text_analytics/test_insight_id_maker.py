@@ -18,7 +18,7 @@ Test insight id name generation
 import doctest
 import unittest
 
-import text_analytics.insight_id
+import text_analytics.insight.insight_id
 
 
 class TestInsightId(unittest.TestCase):
@@ -39,7 +39,7 @@ def load_tests(loader, tests, pattern):
        returned. It does work with the pydev test_text_analytics runner and the unittest CLI
     """
     del loader, pattern  # not used
-    tests.addTests(doctest.DocTestSuite(text_analytics.insight_id))
+    tests.addTests(doctest.DocTestSuite(text_analytics.insight.insight_id))
     tests.addTests(unittest.makeSuite(TestInsightId))
     return tests
 

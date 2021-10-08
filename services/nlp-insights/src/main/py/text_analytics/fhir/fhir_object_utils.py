@@ -47,12 +47,19 @@ from fhir.resources.meta import Meta
 from fhir.resources.reference import Reference
 from fhir.resources.resource import Resource
 
-from text_analytics import insight_constants  # noqa: F401 pylint: disable=unused-import
-from text_analytics.insight_constants import CLASSIFICATION_DERIVED_CODE
-from text_analytics.insight_constants import CLASSIFICATION_DERIVED_SYSTEM
-from text_analytics.insight_constants import INSIGHT_CATEGORY_URL
-from text_analytics.insight_source import UnstructuredSource
-from text_analytics.span import Span
+from text_analytics.insight import insight_constants  # noqa: F401 pylint: disable=unused-import
+from text_analytics.insight.insight_constants import (
+    INSIGHT_CATEGORY_URL,
+    INSIGHT_URL,
+    INSIGHT_DETAIL_URL,
+    INSIGHT_ID_URL,
+    INSIGHT_REFERENCE_PATH_URL,
+    INSIGHT_NLP_OUTPUT_URL,
+    CLASSIFICATION_DERIVED_SYSTEM,
+    CLASSIFICATION_DERIVED_CODE,
+)
+from text_analytics.insight.span import Span
+from text_analytics.insight.text_fragment import TextFragment
 
 
 def find_codings(
@@ -139,12 +146,23 @@ def append_coding(
 
 
 def append_derived_by_nlp_coding(
-    codeable_concept: CodeableConcept, system: str, code: str, display: str = None
-) -> None:
+    codeable_concept: CodeableConcept,
+    system: str,
+    code: str,
+    display: Optional[str] = None,
+) -> bool:
     """Creates a coding and adds it to the codeable concept if the coding does not exist
 
     If the coding exists, but does not have the derived by NLP extension, a new coding
     is added.
+
+    Args:
+        codeable_concept - concept to append to
+        system - system for the new code
+        code - code id
+        display - display text
+    Returns:
+        true if the coding was appended, false if the coding already existed
 
     Example:
      >>> concept = CodeableConcept.construct()
@@ -152,6 +170,7 @@ def append_derived_by_nlp_coding(
      ...                             'http://example_system',
      ...                             'Code_12345',
      ...                             'example display string')
+     True
      >>> print(concept.json(indent=2))
      {
        "coding": [
@@ -183,6 +202,7 @@ def append_derived_by_nlp_coding(
      ...                             'http://example_system',
      ...                             'Code_12345',
      ...                             'example display string')
+     True
      >>> print(concept.json(indent=2))
      {
        "coding": [
@@ -217,12 +237,13 @@ def append_derived_by_nlp_coding(
         get_derived_by_nlp_extension(coding) for coding in existing_codings
     ):
         # there is already a derived extension on at least one coding
-        pass
+        return False
     else:
         # coding exists, but no derived extension, or coding does not exist add
         # new coding
         new_coding = create_coding(system, code, display, derived_by_nlp=True)
         codeable_concept.coding.append(new_coding)
+        return True
 
 
 def create_coding(
@@ -380,7 +401,7 @@ def create_nlp_output_extension(output_url: str) -> Extension:
     """
     attachment = Attachment.construct(url=output_url)
     nlp_output_ext = Extension.construct(
-        url=insight_constants.INSIGHT_NLP_OUTPUT_URL, valueAttachment=attachment
+        url=INSIGHT_NLP_OUTPUT_URL, valueAttachment=attachment
     )
     return nlp_output_ext
 
@@ -423,7 +444,7 @@ def create_derived_from_concept_insight_detail_extension(
     }
     """
     insight_detail = Extension.construct()
-    insight_detail.url = insight_constants.INSIGHT_DETAIL_URL
+    insight_detail.url = INSIGHT_DETAIL_URL
     if insight_detail.extension is None:
         insight_detail.extension = []
 
@@ -437,7 +458,7 @@ def create_derived_from_concept_insight_detail_extension(
 
 
 def create_derived_from_unstructured_insight_detail_extension(
-    source: UnstructuredSource,
+    source: TextFragment,
     confidences: Optional[List[Extension]] = None,
     nlp_extensions: Optional[List[Extension]] = None,
 ) -> Extension:
@@ -458,8 +479,8 @@ def create_derived_from_unstructured_insight_detail_extension(
     >>> report = DiagnosticReport.construct(id='12345',
     ...                                     code=visit_code,
     ...                                     text=report_text)
-    >>> source = UnstructuredSource(text_source=UnstructuredText(report, "path_to_text", report_text),
-    ...                             text_span=Span(begin=0,end=5,covered_text='crazy'))
+    >>> source = TextFragment(text_source=UnstructuredText(report, "path_to_text", report_text),
+    ...                       text_span=Span(begin=0,end=5,covered_text='crazy'))
     >>> confidences = [ create_confidence_extension('Suspected Score', .99) ]
     >>> nlp_extensions = [
     ...                   Extension.construct(
@@ -534,10 +555,12 @@ def create_derived_from_unstructured_insight_detail_extension(
     insight_results.extension = [insight_span_ext]
 
     # Create reference to unstructured report
-    report_reference_ext = create_reference_to_resource_extension(source.text_source.source_resource)
+    report_reference_ext = create_reference_to_resource_extension(
+        source.text_source.source_resource
+    )
 
     insight_detail = Extension.construct()
-    insight_detail.url = insight_constants.INSIGHT_DETAIL_URL
+    insight_detail.url = INSIGHT_DETAIL_URL
     insight_detail.extension = nlp_extensions.copy() if nlp_extensions else []
     insight_detail.extension.extend([report_reference_ext, insight_results])
 
@@ -619,7 +642,7 @@ def create_insight_id_extension(
     }
     """
     insight_id_ext = Extension.construct()
-    insight_id_ext.url = insight_constants.INSIGHT_ID_URL
+    insight_id_ext.url = INSIGHT_ID_URL
 
     insight_id = Identifier.construct()
     insight_id.system = insight_system
@@ -731,8 +754,8 @@ def add_insight_to_meta(
     >>> insight_id = create_insight_id_extension('insight-1', 'urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0')
 
     Create Insight detail Extension:
-    >>> source = UnstructuredSource(text_source=UnstructuredText(report, "path_to_text", report_text)
-    ...                             text_span=Span(begin=0,end=5,covered_text='crazy'))
+    >>> source = TextFragment(text_source=UnstructuredText(report, "path_to_text", report_text)
+    ...                       text_span=Span(begin=0,end=5,covered_text='crazy'))
     >>> confidences = [ create_confidence_extension('Suspected Score', .99) ]
     >>> nlp_extensions = [
     ...                   Extension.construct(
@@ -822,7 +845,7 @@ def add_insight_to_meta(
     """
 
     insight_extension = Extension.construct()
-    insight_extension.url = insight_constants.INSIGHT_URL
+    insight_extension.url = INSIGHT_URL
     insight_extension.extension = [insight_id, insight_detail]
 
     if resource.meta is None:
@@ -945,7 +968,7 @@ def create_reference_path_extension(path: str) -> Extension:
     }
     """
     reference_ext = Extension.construct()
-    reference_ext.url = insight_constants.INSIGHT_REFERENCE_PATH_URL
+    reference_ext.url = INSIGHT_REFERENCE_PATH_URL
     reference_ext.valueString = path
     return reference_ext
 

@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+""""
+Process ACD output and derive conditions
+"""
 
 from collections import namedtuple
 from typing import Iterable
@@ -19,31 +22,35 @@ from typing import Optional
 
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.condition import Condition
-from fhir.resources.resource import Resource
+from fhir.resources.extension import Extension
 from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
 from ibm_whcs_sdk.annotator_for_clinical_data import ContainerAnnotation
+from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 import (
+    InsightModelData,
+)
 
-from text_analytics import fhir_object_utils
-from text_analytics.acd.fhir_enrichment.utils import fhir_object_utils as acd_fhir_utils
-from text_analytics.acd.fhir_enrichment.utils.acd_utils import filter_attribute_values
-from text_analytics.acd.fhir_enrichment.utils.enrichment_constants import (
-    ANNOTATION_TYPE_CONDITION,
-)
-from text_analytics.acd.fhir_enrichment.utils.fhir_object_utils import (
-    get_diagnosis_confidences,
-)
-from text_analytics.fhir_object_utils import (
+from text_analytics.fhir.fhir_object_utils import (
     create_derived_from_unstructured_insight_detail_extension,
     create_insight_id_extension,
     add_insight_to_meta,
+    append_derived_by_nlp_extension,
+    append_coding,
+    create_confidence_extension,
 )
-from text_analytics.insight_id import insight_id_maker
-from text_analytics.insight_source import UnstructuredSource
-from text_analytics.nlp_config import NlpConfig
-from text_analytics.span import Span
-from text_analytics.unstructured import UnstructuredText
+from text_analytics.insight import insight_constants
+from text_analytics.insight.insight_id import insight_id_maker
+from text_analytics.insight.span import Span
+from text_analytics.insight.text_fragment import TextFragment
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.nlp.acd.fhir_enrichment.insights.enrichment_constants import (
+    ANNOTATION_TYPE_CONDITION,
+)
+from text_analytics.nlp.acd.fhir_enrichment.utils.acd_utils import (
+    filter_attribute_values,
+)
+from text_analytics.nlp.nlp_config import NlpConfig
 
 
 def create_conditions_from_insights(
@@ -95,7 +102,7 @@ def create_conditions_from_insights(
     conditions = [entry.fhir_resource for entry in condition_tracker.values()]
 
     for condition in conditions:
-        fhir_object_utils.append_derived_by_nlp_extension(condition)
+        append_derived_by_nlp_extension(condition)
 
     return conditions
 
@@ -123,7 +130,7 @@ def _get_concept_for_attribute(
     return None
 
 
-def _add_insight_to_condition(
+def _add_insight_to_condition(  # pylint: disable=too-many-arguments;
     text_source: UnstructuredText,
     condition: Condition,
     attr: acd.AttributeValueAnnotation,
@@ -137,7 +144,7 @@ def _add_insight_to_condition(
         insight_id_string, nlp_config.nlp_system
     )
 
-    source = UnstructuredSource(
+    source = TextFragment(
         text_source=text_source,
         text_span=Span(begin=attr.begin, end=attr.end, covered_text=attr.covered_text),
     )
@@ -174,4 +181,130 @@ def _add_insight_codings_to_condition(
         condition.code = codeable_concept
         codeable_concept.coding = []
 
-    acd_fhir_utils.add_codings(concept, condition.code)
+    add_codings(concept, condition.code)
+
+
+def add_codings(concept: acd.Concept, codeable_concept: CodeableConcept) -> None:
+    """
+    Adds codes from the concept to the codeable_concept.
+
+    Does not add an extension indicating the code is derived.
+    Parameters:
+        concept - ACD concept
+        codeable_concept - FHIR codeable concept the codes will be added to
+    """
+    if concept.cui is not None:
+        # For CUIs, we do not handle comma-delimited values (have not seen that we ever have more than one value)
+        append_coding(
+            codeable_concept,
+            insight_constants.UMLS_URL,
+            concept.cui,
+            concept.preferred_name,
+        )
+
+    if concept.snomed_concept_id:
+        _append_coding_entries(
+            codeable_concept, insight_constants.SNOMED_URL, concept.snomed_concept_id
+        )
+    if concept.nci_code:
+        _append_coding_entries(
+            codeable_concept, insight_constants.NCI_URL, concept.nci_code
+        )
+    if concept.loinc_id:
+        _append_coding_entries(
+            codeable_concept, insight_constants.LOINC_URL, concept.loinc_id
+        )
+    if concept.mesh_id:
+        _append_coding_entries(
+            codeable_concept, insight_constants.MESH_URL, concept.mesh_id
+        )
+    if concept.icd9_code:
+        _append_coding_entries(
+            codeable_concept, insight_constants.ICD9_URL, concept.icd9_code
+        )
+    if concept.icd10_code:
+        _append_coding_entries(
+            codeable_concept, insight_constants.ICD10_URL, concept.icd10_code
+        )
+    if concept.rx_norm_id:
+        _append_coding_entries(
+            codeable_concept, insight_constants.RXNORM_URL, concept.rx_norm_id
+        )
+
+
+def _append_coding_entries(
+    codeable_concept: CodeableConcept, system: str, csv_ids: str
+) -> None:
+    """Appends multiple codings when the id may be a csv list of codes
+
+    An NLP derived extension is NOT added.
+    A code will not be added if a code with the same system and id already exists
+
+    Args:
+        codeable_concept - concept to add code to
+        system - system for the code
+        id - and id for csv of ids to add codings for
+    """
+    for code_id in csv_ids.split(","):
+        append_coding(codeable_concept, system, code_id)
+
+
+def get_diagnosis_confidences(
+    insight_model_data: InsightModelData,
+) -> Optional[List[Extension]]:
+    if not insight_model_data:
+        return None
+
+    confidence_list = []
+
+    try:
+        confidence_list.append(
+            create_confidence_extension(
+                insight_constants.CONFIDENCE_SCORE_EXPLICIT,
+                insight_model_data.diagnosis.usage.explicit_score,
+            )
+        )
+    except AttributeError:
+        pass
+
+    try:
+        confidence_list.append(
+            create_confidence_extension(
+                insight_constants.CONFIDENCE_SCORE_PATIENT_REPORTED,
+                insight_model_data.diagnosis.usage.patient_reported_score,
+            )
+        )
+    except AttributeError:
+        pass
+
+    try:
+        confidence_list.append(
+            create_confidence_extension(
+                insight_constants.CONFIDENCE_SCORE_DISCUSSED,
+                insight_model_data.diagnosis.usage.discussed_score,
+            )
+        )
+    except AttributeError:
+        pass
+
+    try:
+        confidence_list.append(
+            create_confidence_extension(
+                insight_constants.CONFIDENCE_SCORE_FAMILY_HISTORY,
+                insight_model_data.diagnosis.family_history_score,
+            )
+        )
+    except AttributeError:
+        pass
+
+    try:
+        confidence_list.append(
+            create_confidence_extension(
+                insight_constants.CONFIDENCE_SCORE_SUSPECTED,
+                insight_model_data.diagnosis.suspected_score,
+            )
+        )
+    except AttributeError:
+        pass
+
+    return confidence_list if confidence_list else None

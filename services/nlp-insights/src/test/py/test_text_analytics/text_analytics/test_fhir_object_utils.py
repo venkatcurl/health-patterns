@@ -18,7 +18,7 @@ Test FHIR object builder utils
 import doctest
 import unittest
 
-import text_analytics.fhir_object_utils
+import text_analytics.fhir.fhir_object_utils
 
 
 class TestFhirObjUtils(unittest.TestCase):
@@ -39,7 +39,7 @@ def load_tests(loader, tests, pattern):
        returned. It does work with the pydev test_text_analytics runner and the unittest CLI
     """
     del loader, pattern  # not used
-    tests.addTests(doctest.DocTestSuite(text_analytics.fhir_object_utils))
+    tests.addTests(doctest.DocTestSuite(text_analytics.fhir.fhir_object_utils))
     tests.addTests(unittest.makeSuite(TestFhirObjUtils))
     return tests
 

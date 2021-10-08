@@ -21,19 +21,22 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
 
-from text_analytics.acd.fhir_enrichment.insights.create_condition import (
+from text_analytics.fhir.fhir_object_utils import (
+    create_transaction_bundle,
+    BundleEntryDfn,
+)
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.nlp.acd.fhir_enrichment.insights.create_condition import (
     create_conditions_from_insights,
 )
-from text_analytics.acd.fhir_enrichment.insights.create_medication import (
+from text_analytics.nlp.acd.fhir_enrichment.insights.create_medication import (
     create_med_statements_from_insights,
 )
-from text_analytics.acd.fhir_enrichment.insights.update_codeable_concepts import (
+from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts import (
     update_codeable_concepts_and_meta_with_insights,
     AcdConceptRef,
 )
-from text_analytics.fhir_object_utils import create_transaction_bundle, BundleEntryDfn
-from text_analytics.nlp_config import NlpConfig, ACD_NLP_CONFIG
-from text_analytics.unstructured import UnstructuredText
+from text_analytics.nlp.nlp_config import NlpConfig, ACD_NLP_CONFIG
 
 
 def enrich_resource_codeable_concepts(

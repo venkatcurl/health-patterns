@@ -18,15 +18,15 @@ from typing import Optional
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.condition import Condition
 
-from text_analytics import fhir_object_utils
-from text_analytics.insight_constants import UMLS_URL, SNOMED_URL
-from text_analytics.insight_id import insight_id_maker
-from text_analytics.insight_source import UnstructuredSource
-from text_analytics.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
-from text_analytics.nlp_reponse import NlpResponse, NlpCui
-from text_analytics.span import Span
+from text_analytics.fhir import fhir_object_utils
+from text_analytics.insight.insight_constants import UMLS_URL, SNOMED_URL
+from text_analytics.insight.insight_id import insight_id_maker
+from text_analytics.insight.span import Span
+from text_analytics.insight.text_fragment import TextFragment
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.nlp.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
+from text_analytics.nlp.nlp_reponse import NlpResponse, NlpCui
 from text_analytics.umls.semtype_lookup import resource_relevant_to_any_type_names
-from text_analytics.unstructured import UnstructuredText
 
 
 def _add_insight_codings_to_condition(condition: Condition, nlp_cui: NlpCui) -> None:
@@ -79,7 +79,7 @@ def _add_insight_to_condition(
         insight_id, nlp_config.nlp_system
     )
 
-    source = UnstructuredSource(
+    source = TextFragment(
         text_source=text_source,
         text_span=Span(
             begin=nlp_cui.begin, end=nlp_cui.end, covered_text=nlp_cui.covered_text

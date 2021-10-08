@@ -24,7 +24,7 @@ from typing import Callable
 from typing import Dict
 from typing import NamedTuple
 
-from text_analytics.fields_of_interest import (
+from text_analytics.insight_source.fields_of_interest import (
     CodeableConceptRefType,
     CodeableConceptRef,
 )

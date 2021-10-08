@@ -8,16 +8,18 @@ from fhir.resources.bundle import Bundle
 from fhir.resources.resource import Resource
 from flask import Flask, request, Response
 
-from text_analytics.abstract_nlp_service import NLPService
-from text_analytics.acd.acd_service import ACDService
-from text_analytics.concept_text_adjustment import adjust_concept_text
-from text_analytics.fhir_object_utils import BundleEntryDfn
-from text_analytics.fhir_object_utils import create_transaction_bundle
-from text_analytics.fhir_parsing_utils import parse_fhir_resource_from_payload
-from text_analytics.fields_of_interest import get_concepts_for_nlp_analysis
-from text_analytics.quickUMLS.quickUMLS_service import QuickUMLSService
-from text_analytics.unstructured import UnstructuredText
-from text_analytics.unstructured import get_unstructured_text
+from text_analytics.fhir.fhir_object_utils import BundleEntryDfn
+from text_analytics.fhir.fhir_object_utils import create_transaction_bundle
+from text_analytics.fhir.fhir_parsing_utils import parse_fhir_resource_from_payload
+from text_analytics.insight_source.concept_text_adjustment import adjust_concept_text
+from text_analytics.insight_source.fields_of_interest import (
+    get_concepts_for_nlp_analysis,
+)
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.insight_source.unstructured_text import get_unstructured_text
+from text_analytics.nlp.abstract_nlp_service import NLPService
+from text_analytics.nlp.acd.acd_service import ACDService
+from text_analytics.nlp.quickUMLS.quickUMLS_service import QuickUMLSService
 
 
 logger = logging.getLogger()
