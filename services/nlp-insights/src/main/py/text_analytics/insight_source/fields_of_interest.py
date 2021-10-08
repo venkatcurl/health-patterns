@@ -29,6 +29,7 @@ from typing import Dict
 from typing import Iterable
 from typing import NamedTuple
 from typing import Optional
+from typing import Type
 
 from fhir.resources.allergyintolerance import AllergyIntolerance
 from fhir.resources.allergyintolerance import AllergyIntoleranceReaction
@@ -166,17 +167,16 @@ def _get_immunization_concepts_to_analyze(
 
 ExtractorFunction = Callable[[Resource], Iterable[CodeableConceptRef]]
 
-
-_concept_extractors: Dict[str, ExtractorFunction] = {
-    AllergyIntolerance.__name__: _get_allergy_intolerance_concepts_to_analyze,
-    Condition.__name__: _get_condition_concepts_to_analyze,
-    Immunization.__name__: _get_immunization_concepts_to_analyze,
+_concept_extractors: Dict[Type[Resource], ExtractorFunction] = {
+    AllergyIntolerance: _get_allergy_intolerance_concepts_to_analyze,
+    Condition: _get_condition_concepts_to_analyze,
+    Immunization: _get_immunization_concepts_to_analyze,
 }
 
 
 def get_concepts_for_nlp_analysis(
     resource: Resource,
-    concept_extractors: Optional[Dict[str, ExtractorFunction]] = None,
+    concept_extractors: Optional[Dict[Type[Resource], ExtractorFunction]] = None,
 ) -> Iterable[CodeableConceptRef]:
     """Determines concepts for a FHIR Resource that should be analyzed by NLP
 
@@ -188,5 +188,5 @@ def get_concepts_for_nlp_analysis(
         references to concepts with text that can be updated with NLP insights
     """
     extractors = concept_extractors if concept_extractors else _concept_extractors
-    extractor = extractors.get(type(resource).__name__)
+    extractor = extractors.get(type(resource))
     return extractor(resource) if extractor else []
