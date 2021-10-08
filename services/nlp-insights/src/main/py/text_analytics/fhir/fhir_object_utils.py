@@ -47,7 +47,9 @@ from fhir.resources.meta import Meta
 from fhir.resources.reference import Reference
 from fhir.resources.resource import Resource
 
-from text_analytics.insight import insight_constants  # noqa: F401 pylint: disable=unused-import
+from text_analytics.insight import (
+    insight_constants,
+)  # noqa: F401 pylint: disable=unused-import
 from text_analytics.insight.insight_constants import (
     INSIGHT_CATEGORY_URL,
     INSIGHT_URL,
@@ -60,6 +62,9 @@ from text_analytics.insight.insight_constants import (
 )
 from text_analytics.insight.span import Span
 from text_analytics.insight.text_fragment import TextFragment
+from text_analytics.insight_source.unstructured_text import (  # noqa: F401 pylint: disable=unused-import
+    UnstructuredText,
+)
 
 
 def find_codings(
@@ -202,7 +207,7 @@ def append_derived_by_nlp_coding(
      ...                             'http://example_system',
      ...                             'Code_12345',
      ...                             'example display string')
-     True
+     False
      >>> print(concept.json(indent=2))
      {
        "coding": [
@@ -238,12 +243,12 @@ def append_derived_by_nlp_coding(
     ):
         # there is already a derived extension on at least one coding
         return False
-    else:
-        # coding exists, but no derived extension, or coding does not exist add
-        # new coding
-        new_coding = create_coding(system, code, display, derived_by_nlp=True)
-        codeable_concept.coding.append(new_coding)
-        return True
+
+    # coding exists, but no derived extension, or coding does not exist add
+    # new coding
+    new_coding = create_coding(system, code, display, derived_by_nlp=True)
+    codeable_concept.coding.append(new_coding)
+    return True
 
 
 def create_coding(
@@ -396,13 +401,20 @@ def create_nlp_output_extension(output_url: str) -> Extension:
     Example:
     >>> ext = create_nlp_output_extension("uri://path/abc-123.json")
     >>> print(ext.json(indent=2))
-
-
+    {
+      "url": "http://ibm.com/fhir/cdm/StructureDefinition/evaluated-output",
+      "valueAttachment": {
+        "url": "uri://path/abc-123.json"
+      }
+    }
     """
-    attachment = Attachment.construct(url=output_url)
-    nlp_output_ext = Extension.construct(
-        url=INSIGHT_NLP_OUTPUT_URL, valueAttachment=attachment
-    )
+    attachment = Attachment.construct()
+    attachment.url = output_url
+
+    nlp_output_ext = Extension.construct()
+    nlp_output_ext.url = INSIGHT_NLP_OUTPUT_URL
+    nlp_output_ext.valueAttachment = attachment
+
     return nlp_output_ext
 
 
@@ -754,7 +766,7 @@ def add_insight_to_meta(
     >>> insight_id = create_insight_id_extension('insight-1', 'urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0')
 
     Create Insight detail Extension:
-    >>> source = TextFragment(text_source=UnstructuredText(report, "path_to_text", report_text)
+    >>> source = TextFragment(text_source=UnstructuredText(report, "path_to_text", report_text),
     ...                       text_span=Span(begin=0,end=5,covered_text='crazy'))
     >>> confidences = [ create_confidence_extension('Suspected Score', .99) ]
     >>> nlp_extensions = [
@@ -835,7 +847,7 @@ def add_insight_to_meta(
           }
         ]
       },
-      "text": "crazy",
+      "text": "crazy, totally",
       "code": {
         "text": "Mental status Narrative"
       },

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import json
+from typing import List
+from typing import cast
 import unittest
 
 from deepdiff import DeepDiff
@@ -28,10 +30,12 @@ from test_text_analytics.util.blank import (
     blank_acd_evidence_detail_in_resource,
 )
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
-from text_analytics.acd.fhir_enrichment.enrich_fhir_resource import (
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     create_new_resources_from_insights,
     create_conditions_from_insights,
 )
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
 
 
 class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
@@ -56,11 +60,19 @@ class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
           full_output (boolean) - if True, will output the full expected and actual results if they do not match
         """
 
-        actual_results = create_conditions_from_insights(input_report, acd_output)
-
-        self.assertEqual(
-            len(actual_results), 1, "Multiple FHIR resources returned, only expecting 1"
+        actual_results = create_conditions_from_insights(
+            UnstructuredText(
+                source_resource=input_report,
+                fhir_path="DiagnosticReport.presentedForm[0].data",
+                text=input_report.presentedForm[0].data,
+            ), acd_output, ACD_NLP_CONFIG
         )
+
+        self.assertTrue(
+            actual_results and (len(actual_results) == 1),
+            f"Multiple FHIR resources returned, only expecting 1 {str(actual_results)}",
+        )
+        actual_results = cast(List[Condition], actual_results)
         actual_results_dict = actual_results[0].dict()
         blank_acd_evidence_detail_in_resource(actual_results_dict)
         expected_output_dict = expected_condition.dict()
@@ -80,7 +92,7 @@ class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
         acd_output_file: str,
         expected_bundle: Bundle,
         full_output: bool,
-    ):
+    ) -> None:
         """Processes a report and ensures that the resulting bundle is as expected
 
         Args:
@@ -94,7 +106,18 @@ class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
         with open(acd_output_file, "r", encoding="utf-8") as f:
             acd_result = ContainerAnnotation.from_dict(json.loads(f.read()))
 
-        actual_results = create_new_resources_from_insights(input_report, acd_result)
+        actual_results = create_new_resources_from_insights(
+            UnstructuredText(
+                source_resource=input_report,
+                fhir_path="DiagnosticReport.presentedForm[0].data",
+                text=input_report.presentedForm[0].data,
+            ),
+            acd_result,
+        )
+
+        self.assertIsNotNone(actual_results)
+        actual_results = cast(Bundle, actual_results)
+
         actual_results_dict = actual_results.dict()
         blank_acd_evidence_detail_in_bundle(actual_results_dict)
 
@@ -223,7 +246,7 @@ class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
         ) as f:
             acd_output = ContainerAnnotation.from_dict(json.loads(f.read()))
         actual_results = create_conditions_from_insights(
-            input_diagnostic_report, acd_output
+            input_diagnostic_report, acd_output, ACD_NLP_CONFIG
         )
         self.assertEqual(
             actual_results,

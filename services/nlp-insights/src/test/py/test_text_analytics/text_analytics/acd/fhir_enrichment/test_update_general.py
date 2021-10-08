@@ -24,17 +24,19 @@ from test_text_analytics.util.blank import (
     blank_acd_evidence_detail_in_bundle,
     blank_acd_evidence_detail_in_resource,
 )
-
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
-from text_analytics.acd.fhir_enrichment.enrich_fhir_resource import (
-    enrich_resource_codeable_concepts,
+from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
+from text_analytics.insight_source.fields_of_interest import (
+    CodeableConceptRef,
+    CodeableConceptRefType,
 )
-from text_analytics.acd.fhir_enrichment.insights.update_codeable_concepts import (
+
+from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts import (
     update_codeable_concepts_and_meta_with_insights,
-    CodeableConceptAcdInsight,
+    AcdConceptRef,
 )
-from text_analytics.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.fields_of_interest import CodeableConceptRef, CodeableConceptRefType
+
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
 
 
 class update_general_test(UnitTestUsingExternalResource):
@@ -51,7 +53,7 @@ class update_general_test(UnitTestUsingExternalResource):
           full_output (boolean) - if True, will output the full expected and actual results if they do not match
         """
         acd_results = [
-            CodeableConceptAcdInsight(
+            AcdConceptRef(
                 adjusted_concept=AdjustedConceptRef(
                     concept_ref=CodeableConceptRef(
                         type=CodeableConceptRefType.VACCINE,
@@ -64,7 +66,9 @@ class update_general_test(UnitTestUsingExternalResource):
             )
         ]
 
-        update_codeable_concepts_and_meta_with_insights(immunization, acd_results)
+        update_codeable_concepts_and_meta_with_insights(
+            immunization, acd_results, ACD_NLP_CONFIG
+        )
         actual_results_dict = immunization.dict()
         blank_acd_evidence_detail_in_resource(actual_results_dict)
         expected_output_dict = expected_immunization.dict()
@@ -82,12 +86,18 @@ class update_general_test(UnitTestUsingExternalResource):
     # Tests insights found for an immunization.
     def test_insights_added(self):
         input_resource = Immunization.parse_file(
-            self.resource_path + "/acd/mock_fhir/input/MetaSectionExists_Immunization.json"
+            self.resource_path
+            + "/acd/mock_fhir/input/MetaSectionExists_Immunization.json"
         )
         expected_output = Immunization.parse_file(
-            self.resource_path + "/acd/mock_fhir/output/MetaSectionExists_Immunization.json"
+            self.resource_path
+            + "/acd/mock_fhir/output/MetaSectionExists_Immunization.json"
         )
-        with open(self.resource_path + "/acd/mock_acd_output/Immunization.json", "r", encoding="utf-8") as f:
+        with open(
+            self.resource_path + "/acd/mock_acd_output/Immunization.json",
+            "r",
+            encoding="utf-8",
+        ) as f:
             acd_output = ContainerAnnotation.from_dict(json.loads(f.read()))
         self._check_results(input_resource, acd_output, expected_output, True)
 

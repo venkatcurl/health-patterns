@@ -277,15 +277,15 @@ def delete_resources():
 
 def _derive_bundle_entries(resource: Resource) -> List[BundleEntryDfn]:
     """Derives new bundle entries for the resource
-    
-       The returned entries may be
-        - new resources derived from text within the resource OR
-        - the same resource, with enriched concepts.
-        
-       An empty list will be returned if nothing new was derived
-       
-       Args: resource - the fhir resource
-       Returns the list of bundle entries for enriched resources
+
+    The returned entries may be
+     - new resources derived from text within the resource OR
+     - the same resource, with enriched concepts.
+
+    An empty list will be returned if nothing new was derived
+
+    Args: resource - the fhir resource
+    Returns the list of bundle entries for enriched resources
     """
     result: List[BundleEntryDfn] = []
 

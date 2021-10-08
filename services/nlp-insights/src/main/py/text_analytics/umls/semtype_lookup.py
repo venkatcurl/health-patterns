@@ -228,7 +228,7 @@ def resource_relevant_to_any_type_names(
         true if any of the type names are relevant
 
     Example:
-    >>> resource_relevant_to_any_type_names(Condition, [""umls.DiseaseOrSyndrome", "umls.ImmunologicFactor"])
+    >>> resource_relevant_to_any_type_names(Condition, ["umls.DiseaseOrSyndrome", "umls.ImmunologicFactor"])
     True
     """
     relevant_type_names = _resource_type_to_type_names.get(resource_clazz.__name__)
@@ -269,7 +269,7 @@ def get_names_from_type_ids(ids: Iterable[str]) -> Set[str]:
     Returns: list of readable names
 
     Example:
-    >>> t = get_semantic_types_from_type_ids(['T047', 'T046'])
+    >>> t = get_names_from_type_ids(['T047', 'T046'])
     >>> t == {'umls.PathologicFunction', 'umls.DiseaseOrSyndrome'}
     True
     """

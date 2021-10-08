@@ -45,7 +45,7 @@ class NlpConfig(NamedTuple):
         return None
 
 
-def acd_get_nlp_output_loc(nlp_output: acd.ContainerAnnotation):
+def acd_get_nlp_output_loc(nlp_output: acd.ContainerAnnotation) -> str:
     """Returns the location of ACD NLP output"""
     del nlp_output
     # TODO: save output to an external MinIO location.

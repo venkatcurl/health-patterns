@@ -23,18 +23,28 @@ INSIGHT_CLASSIFICATION_URL = "http://ibm.com/fhir/cdm/insight/classification"   
 
 # Extension URLs used in meta extensions (extensions in the meta section of a FHIR resource)
 # also see INSIGHT_PROCESS_NAME_URL, INSIGHT_CLASSIFICATION_URL
-INSIGHT_RESULT_URL = "http://ibm.com/fhir/cdm/insight/result"                      # insight top level
-INSIGHT_BASED_ON_URL = "http://ibm.com/fhir/cdm/insight/basedOn"                   # link to the unstructured report (FHIR DiagnosticReport)
-INSIGHT_INSIGHT_ENTRY_URL = "http://ibm.com/fhir/cdm/insight/insight-entry"        # a derived insight (general, complex extension)
-INSIGHT_INSIGHT_ID_URL = "http://ibm.com/fhir/cdm/insight/insight-id"              # ID of the insight entry
-INSIGHT_EVIDENCE_DETAIL_URL = "http://ibm.com/fhir/cdm/insight/evidence-detail"    # full ACD output
-INSIGHT_SPAN_URL = "http://ibm.com/fhir/cdm/insight/span"                          # span information (general, complex extension)
-INSIGHT_SPAN_OFFSET_BEGIN_URL = "http://ibm.com/fhir/cdm/insight/offset-begin"     # beginning offset of NLP annotation
-INSIGHT_SPAN_OFFSET_END_URL = "http://ibm.com/fhir/cdm/insight/offset-end"         # ending offset of NLP annotation
-INSIGHT_SPAN_COVERED_TEXT_URL = "http://ibm.com/fhir/cdm/insight/covered-text"     # text covered by the NLP annotation
-INSIGHT_CONFIDENCE_URL = "http://ibm.com/fhir/cdm/insight/confidence"              # confidence (general, complex extension)
-INSIGHT_CONFIDENCE_SCORE_URL = "http://ibm.com/fhir/cdm/insight/confidence-score"  # confidence score for the insight
-INSIGHT_CONFIDENCE_NAME_URL = "http://ibm.com/fhir/cdm/insight/confidence-name"    # name of the specific confidence score
+INSIGHT_RESULT_URL = "http://ibm.com/fhir/cdm/StructureDefinition/insight-result"  # insight result
+INSIGHT_SPAN_URL = "http://ibm.com/fhir/cdm/StructureDefinition/span"              # span information (general, complex extension)
+INSIGHT_SPAN_OFFSET_BEGIN_URL = "http://ibm.com/fhir/cdm/StructureDefinition/offset-begin"  # beginning offset of NLP annotation
+INSIGHT_SPAN_OFFSET_END_URL = "http://ibm.com/fhir/cdm/StructureDefinition/offset-end"      # ending offset of NLP annotation
+INSIGHT_SPAN_COVERED_TEXT_URL = "http://ibm.com/fhir/cdm/StructureDefinition/covered-text"  # text covered by the NLP annotation
+INSIGHT_CONFIDENCE_URL = "http://ibm.com/fhir/cdm/StructureDefinition/insight-confidence"   # confidence (general, complex extension)
+INSIGHT_CONFIDENCE_SCORE_URL = "http://ibm.com/fhir/cdm/StructureDefinition/score"  # confidence score for the insight
+INSIGHT_CONFIDENCE_NAME_URL = "http://ibm.com/fhir/cdm/StructureDefinition/description"     # name of the specific confidence score
+
+# FIXME: The valus above appear to have been changed in future releases
+# INSIGHT_RESULT_URL = "http://ibm.com/fhir/cdm/insight/result"                      # insight top level
+# INSIGHT_BASED_ON_URL = "http://ibm.com/fhir/cdm/insight/basedOn"                   # link to the unstructured report (FHIR DiagnosticReport)
+# INSIGHT_INSIGHT_ENTRY_URL = "http://ibm.com/fhir/cdm/insight/insight-entry"        # a derived insight (general, complex extension)
+# INSIGHT_INSIGHT_ID_URL = "http://ibm.com/fhir/cdm/insight/insight-id"              # ID of the insight entry
+# INSIGHT_EVIDENCE_DETAIL_URL = "http://ibm.com/fhir/cdm/insight/evidence-detail"    # full ACD output
+# INSIGHT_SPAN_URL = "http://ibm.com/fhir/cdm/insight/span"                          # span information (general, complex extension)
+# INSIGHT_SPAN_OFFSET_BEGIN_URL = "http://ibm.com/fhir/cdm/insight/offset-begin"     # beginning offset of NLP annotation
+# INSIGHT_SPAN_OFFSET_END_URL = "http://ibm.com/fhir/cdm/insight/offset-end"         # ending offset of NLP annotation
+# INSIGHT_SPAN_COVERED_TEXT_URL = "http://ibm.com/fhir/cdm/insight/covered-text"     # text covered by the NLP annotation
+# INSIGHT_CONFIDENCE_URL = "http://ibm.com/fhir/cdm/insight/confidence"              # confidence (general, complex extension)
+# INSIGHT_CONFIDENCE_SCORE_URL = "http://ibm.com/fhir/cdm/insight/confidence"
+# INSIGHT_CONFIDENCE_NAME_URL = "http://ibm.com/fhir/cdm/StructureDefinition/description"
 
 # Extension URLs used within standard FHIR resource fields (extensions within a nested field of a FHIR resource)
 # also see INSIGHT_REFERENCE_URL, INSIGHT_CLASSIFICATION_URL

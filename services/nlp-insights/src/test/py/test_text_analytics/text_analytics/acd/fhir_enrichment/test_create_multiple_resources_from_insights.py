@@ -23,9 +23,11 @@ from fhir.resources.diagnosticreport import DiagnosticReport
 from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 import (
     ContainerAnnotation,
 )
+
 from test_text_analytics.util.blank import blank_acd_evidence_detail_in_bundle
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
-from text_analytics.acd.fhir_enrichment.enrich_fhir_resource import (
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     create_new_resources_from_insights,
 )
 
@@ -53,7 +55,11 @@ class CreateMutltipleResourceFromInsightTest(UnitTestUsingExternalResource):
 
         # Call code to call ACD and add insights
         actual_results = create_new_resources_from_insights(
-            input_diagnostic_report, acd_result
+            UnstructuredText(
+                source_resource=input_diagnostic_report,
+                fhir_path="DiagnosticReport.presentedForm[0].data",
+                text=input_diagnostic_report.presentedForm[0].data,
+            ), acd_result
         )
         actual_results_dict = actual_results.dict()
         blank_acd_evidence_detail_in_bundle(actual_results_dict)

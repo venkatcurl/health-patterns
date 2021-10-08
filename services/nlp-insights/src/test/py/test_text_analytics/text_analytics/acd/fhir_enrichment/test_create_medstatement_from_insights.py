@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+from typing import List
+from typing import cast
 import unittest
 
 from deepdiff import DeepDiff
@@ -27,10 +29,12 @@ from test_text_analytics.util.blank import (
     blank_acd_evidence_detail_in_resource,
 )
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
-from text_analytics.acd.fhir_enrichment.enrich_fhir_resource import (
+from text_analytics.insight_source.unstructured_text import UnstructuredText
+from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     create_new_resources_from_insights,
     create_med_statements_from_insights,
 )
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
 
 
 class CreateMedStatementFromInsightTest(UnitTestUsingExternalResource):
@@ -48,8 +52,18 @@ class CreateMedStatementFromInsightTest(UnitTestUsingExternalResource):
           full_output (boolean) - if True, will output the full expected and actual results if they do not match
         """
         actual_results = create_med_statements_from_insights(
-            input_diagnostic_report, acd_output
+            UnstructuredText(
+                source_resource=input_diagnostic_report,
+                fhir_path="DiagnosticReport.presentedForm[0].data",
+                text=input_diagnostic_report.presentedForm[0].data,
+            ),
+            acd_output,
+            ACD_NLP_CONFIG,
         )
+
+        self.assertIsNotNone(actual_results)
+        actual_results = cast(List[MedicationStatement], actual_results)
+
         self.assertEqual(
             len(actual_results), 1, "Multiple FHIR resources returned, only expecting 1"
         )
@@ -84,7 +98,12 @@ class CreateMedStatementFromInsightTest(UnitTestUsingExternalResource):
 
         # Call code to call ACD and add insights
         actual_results = create_new_resources_from_insights(
-            input_diagnostic_report, mock_acd_response
+            UnstructuredText(
+                source_resource=input_diagnostic_report,
+                fhir_path="DiagnosticReport.presentedForm[0].data",
+                text=input_diagnostic_report.presentedForm[0].data,
+            ),
+            mock_acd_response,
         )
         actual_results_dict = actual_results.dict()
         blank_acd_evidence_detail_in_bundle(actual_results_dict)
@@ -206,7 +225,7 @@ class CreateMedStatementFromInsightTest(UnitTestUsingExternalResource):
         ) as f:
             acd_output = ContainerAnnotation.from_dict(json.loads(f.read()))
         actual_results = create_med_statements_from_insights(
-            input_diagnostic_report, acd_output
+            input_diagnostic_report, acd_output, ACD_NLP_CONFIG
         )
         self.assertEqual(actual_results, None, "Expected no results but got something")
 

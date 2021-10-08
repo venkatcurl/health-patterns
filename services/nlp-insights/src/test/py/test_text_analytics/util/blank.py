@@ -11,12 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-
-
-#def common_setup(self) -> None:
-#    self.resource_path = os.path.dirname(os.path.abspath(__file__)) + '/../../resources/'
-#    self.maxDiff = None
 
 
 # The ACD output can get very long and is a pain to put into the GT output.
@@ -24,7 +18,8 @@ import os
 # Parameters:
 #   fhir_resource_dict - dictionary containing a FHIR resource (eg Condition)
 def blank_acd_evidence_detail_in_resource(fhir_resource_dict):
-    pass
+    del fhir_resource_dict
+
 # This no longer works with the change to use the CDM IG.  If we need this once we move ACD output to MinIO it will need to be reworked.
     # next = fhir_resource_dict['meta']
     # next = next['extension']
@@ -48,5 +43,5 @@ def blank_acd_evidence_detail_in_resource(fhir_resource_dict):
 def blank_acd_evidence_detail_in_bundle(fhir_bundle_dict):
     entries = fhir_bundle_dict['entry']
     for entry in entries:
-        next = entry['resource']
-        blank_acd_evidence_detail_in_resource(next)
+        nextEntry = entry['resource']
+        blank_acd_evidence_detail_in_resource(nextEntry)

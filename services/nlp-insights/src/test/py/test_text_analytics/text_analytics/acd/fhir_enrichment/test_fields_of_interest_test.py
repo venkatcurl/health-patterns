@@ -22,7 +22,7 @@ from fhir.resources.condition import Condition
 from fhir.resources.immunization import Immunization
 
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
-from text_analytics.fields_of_interest import (
+from text_analytics.insight_source.fields_of_interest import (
     get_concepts_for_nlp_analysis,
     CodeableConceptRef,
     CodeableConceptRefType,

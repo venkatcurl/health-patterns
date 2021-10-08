@@ -19,7 +19,7 @@ text associated with the concept.
 
 For example if a concept is for a vaccine, appendint "Vaccine" to the text helps NLP
 understand that the text refers to a vaccine and not the disease.
-""" 
+"""
 from typing import Callable
 from typing import Dict
 from typing import NamedTuple

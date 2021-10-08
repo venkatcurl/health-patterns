@@ -23,22 +23,30 @@ from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 imp
 )
 
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
-from text_analytics.acd.fhir_enrichment.enrich_fhir_resource import (
+from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
+from text_analytics.insight_source.fields_of_interest import (
+    CodeableConceptRef,
+    CodeableConceptRefType,
+)
+from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     enrich_resource_codeable_concepts,
 )
-from text_analytics.acd.fhir_enrichment.insights.update_codeable_concepts import (
+
+from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts import (
     update_codeable_concepts_and_meta_with_insights,
-    CodeableConceptAcdInsight,
+    AcdConceptRef,
 )
-from text_analytics.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.fields_of_interest import CodeableConceptRef, CodeableConceptRefType
+
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
 
 
 class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
     def _verify_insights_allergy(
         self, allergy, expected_allergy, ai_results, full_output
     ):
-        num_updates = update_codeable_concepts_and_meta_with_insights(allergy, ai_results)
+        num_updates = update_codeable_concepts_and_meta_with_insights(
+            allergy, ai_results, ACD_NLP_CONFIG
+        )
 
         if expected_allergy is None:
             self.assertTrue(num_updates == 0, "Expected no allergy updated")
@@ -57,7 +65,8 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
         and the correct insights for this one manifestation are added to the FHIR resource.
         """
         allergy = AllergyIntolerance.parse_file(
-            self.resource_path + "/acd/mock_fhir/input/AllergyIntolerance_oxycodone.json"
+            self.resource_path
+            + "/acd/mock_fhir/input/AllergyIntolerance_oxycodone.json"
         )
         expected_allergy = AllergyIntolerance.parse_file(
             self.resource_path
@@ -73,7 +82,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
             mock_acd_response = ContainerAnnotation.from_dict(json.loads(f.read()))
 
         ai_results = [
-            CodeableConceptAcdInsight(
+            AcdConceptRef(
                 adjusted_concept=AdjustedConceptRef(
                     concept_ref=CodeableConceptRef(
                         type=CodeableConceptRefType.MANIFESTATION,
@@ -93,7 +102,8 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
         and the correct insights for this allergen are added to the FHIR resource.
         """
         allergy = AllergyIntolerance.parse_file(
-            self.resource_path + "/acd/mock_fhir/input/AllergyIntolerance_tree_pollen.json"
+            self.resource_path
+            + "/acd/mock_fhir/input/AllergyIntolerance_tree_pollen.json"
         )
         expected_allergy = AllergyIntolerance.parse_file(
             self.resource_path
@@ -109,7 +119,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
             mock_acd_response = ContainerAnnotation.from_dict(json.loads(f.read()))
 
         ai_results = [
-            CodeableConceptAcdInsight(
+            AcdConceptRef(
                 adjusted_concept=AdjustedConceptRef(
                     concept_ref=CodeableConceptRef(
                         type=CodeableConceptRefType.ALLERGEN,
@@ -137,7 +147,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
             mock_acd_response = ContainerAnnotation.from_dict(json.loads(f.read()))
 
         ai_results = [
-            CodeableConceptAcdInsight(
+            AcdConceptRef(
                 adjusted_concept=AdjustedConceptRef(
                     concept_ref=CodeableConceptRef(
                         type=CodeableConceptRefType.ALLERGEN,
@@ -184,7 +194,8 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
             self.resource_path + "/acd/mock_fhir/input/AllergyIntolerance_peanuts.json"
         )
         expected_json = (
-            self.resource_path + "/acd/mock_fhir/output/Bundle_update_allergy_peanuts.json"
+            self.resource_path
+            + "/acd/mock_fhir/output/Bundle_update_allergy_peanuts.json"
         )
 
         allergy = AllergyIntolerance.parse_file(input_json)
@@ -199,7 +210,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
         ) as f:
             acd_result_peanut = ContainerAnnotation.from_dict(json.loads(f.read()))
             ai_results.append(
-                CodeableConceptAcdInsight(
+                AcdConceptRef(
                     adjusted_concept=AdjustedConceptRef(
                         concept_ref=CodeableConceptRef(
                             type=CodeableConceptRefType.ALLERGEN,
@@ -227,7 +238,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
                     )
                     fhirPath = f"AllergyIntolerance.reaction[{reaction_counter}].manifestation[{manifestation_counter}]"
                     ai_results.append(
-                        CodeableConceptAcdInsight(
+                        AcdConceptRef(
                             adjusted_concept=AdjustedConceptRef(
                                 concept_ref=CodeableConceptRef(
                                     type=CodeableConceptRefType.MANIFESTATION,
@@ -247,7 +258,8 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
 
     def test_single_resource_update_allergy_penicillin(self):
         input_json = (
-            self.resource_path + "/acd/mock_fhir/input/AllergyIntolerance_penicillin.json"
+            self.resource_path
+            + "/acd/mock_fhir/input/AllergyIntolerance_penicillin.json"
         )
         expected_json = (
             self.resource_path
@@ -266,7 +278,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
         ) as f:
             acd_result_penicillin = ContainerAnnotation.from_dict(json.loads(f.read()))
             ai_results.append(
-                CodeableConceptAcdInsight(
+                AcdConceptRef(
                     adjusted_concept=AdjustedConceptRef(
                         concept_ref=CodeableConceptRef(
                             type=CodeableConceptRefType.ALLERGEN,
@@ -292,7 +304,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
                             json.loads(f.read())
                         )
                         ai_results.append(
-                            CodeableConceptAcdInsight(
+                            AcdConceptRef(
                                 adjusted_concept=AdjustedConceptRef(
                                     concept_ref=CodeableConceptRef(
                                         type=CodeableConceptRefType.MANIFESTATION,
@@ -313,7 +325,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
                         )
 
                         ai_results.append(
-                            CodeableConceptAcdInsight(
+                            AcdConceptRef(
                                 adjusted_concept=AdjustedConceptRef(
                                     concept_ref=CodeableConceptRef(
                                         type=CodeableConceptRefType.MANIFESTATION,
@@ -341,7 +353,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
         ) as f:
             acd_result_abcd = ContainerAnnotation.from_dict(json.loads(f.read()))
             ai_results.append(
-                CodeableConceptAcdInsight(
+                AcdConceptRef(
                     adjusted_concept=AdjustedConceptRef(
                         concept_ref=CodeableConceptRef(
                             type=CodeableConceptRefType.ALLERGEN,

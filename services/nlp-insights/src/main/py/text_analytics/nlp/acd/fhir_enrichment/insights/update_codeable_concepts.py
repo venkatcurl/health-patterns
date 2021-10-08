@@ -161,8 +161,8 @@ def _append_codings_with_nlp_derived_extension(
     Returns:
         number of codes added
     """
-    codes_added : int = 0
-    
+    codes_added: int = 0
+
     if acd_concept.cui is not None:
         # For CUIs, we do not handle comma-delimited values (have not seen that we ever have more than one value)
         # We use the preferred name from UMLS for the display text

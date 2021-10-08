@@ -21,19 +21,24 @@ from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 imp
 )
 
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
-from text_analytics.acd.fhir_enrichment.enrich_fhir_resource import (
+from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
+from text_analytics.insight_source.fields_of_interest import (
+    CodeableConceptRef,
+    CodeableConceptRefType,
+)
+from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     create_new_resources_from_insights,
     create_conditions_from_insights,
 )
-from text_analytics.acd.fhir_enrichment.enrich_fhir_resource import (
+from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     enrich_resource_codeable_concepts,
 )
-from text_analytics.acd.fhir_enrichment.insights.update_codeable_concepts import (
+from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts import (
     update_codeable_concepts_and_meta_with_insights,
-    CodeableConceptAcdInsight,
+    AcdConceptRef,
 )
-from text_analytics.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.fields_of_interest import CodeableConceptRef, CodeableConceptRefType
+
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
 
 
 class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
@@ -50,7 +55,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
         """
 
         ai_results = [
-            CodeableConceptAcdInsight(
+            AcdConceptRef(
                 adjusted_concept=AdjustedConceptRef(
                     concept_ref=CodeableConceptRef(
                         type=CodeableConceptRefType.VACCINE,
@@ -64,7 +69,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
         ]
 
         num_updates = update_codeable_concepts_and_meta_with_insights(
-            immunization, ai_results
+            immunization, ai_results, ACD_NLP_CONFIG
         )
 
         differences = DeepDiff(
@@ -116,7 +121,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
             acd_result = ContainerAnnotation.from_dict(json.loads(f.read()))
 
         ai_results = [
-            CodeableConceptAcdInsight(
+            AcdConceptRef(
                 adjusted_concept=AdjustedConceptRef(
                     concept_ref=CodeableConceptRef(
                         type=CodeableConceptRefType.VACCINE,
@@ -130,7 +135,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
         ]
 
         num_updates = update_codeable_concepts_and_meta_with_insights(
-            immunization, ai_results
+            immunization, ai_results, ACD_NLP_CONFIG
         )
         self.assertEqual(0, num_updates, "Did not expect results, but some returned")
 
@@ -159,7 +164,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
             expected_bundle = None
 
         ai_results = [
-            CodeableConceptAcdInsight(
+            AcdConceptRef(
                 adjusted_concept=AdjustedConceptRef(
                     concept_ref=CodeableConceptRef(
                         type=CodeableConceptRefType.VACCINE,
