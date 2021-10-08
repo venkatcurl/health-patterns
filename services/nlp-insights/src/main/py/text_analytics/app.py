@@ -2,11 +2,23 @@ import json
 import logging
 import os
 from typing import Dict
+from typing import List
 
+from fhir.resources.bundle import Bundle
+from fhir.resources.resource import Resource
 from flask import Flask, request, Response
 
+from text_analytics.abstract_nlp_service import NLPService
 from text_analytics.acd.acd_service import ACDService
+from text_analytics.concept_text_adjustment import adjust_concept_text
+from text_analytics.fhir_object_utils import BundleEntryDfn
+from text_analytics.fhir_object_utils import create_transaction_bundle
+from text_analytics.fhir_parsing_utils import parse_fhir_resource_from_payload
+from text_analytics.fields_of_interest import get_concepts_for_nlp_analysis
 from text_analytics.quickUMLS.quickUMLS_service import QuickUMLSService
+from text_analytics.unstructured import UnstructuredText
+from text_analytics.unstructured import get_unstructured_text
+
 
 logger = logging.getLogger()
 logging.basicConfig(
@@ -67,37 +79,27 @@ def init_configs():
 
     if os.getenv("ACD_ENABLE_CONFIG") == "true":
         # fill up a config for ACD
-        try:
-            tmp_config = {}
-            tmp_config["name"] = os.getenv("ACD_NAME")
-            tmp_config["nlpServiceType"] = "acd"
-            details = {}
-            details["endpoint"] = os.getenv("ACD_ENDPOINT")
-            details["apikey"] = os.getenv("ACD_API_KEY")
-            details["flow"] = os.getenv("ACD_FLOW")
-            tmp_config["config"] = details
-            persist_config_helper(tmp_config)
-            logger.info("%s added:%s", tmp_config["name"], str(nlp_services_dict))
-        except Exception as ex:
-            logger.exception(
-                "Error when trying to persist initial config...skipping:%s", str(ex)
-            )
+        tmp_config = {}
+        tmp_config["name"] = os.getenv("ACD_NAME")
+        tmp_config["nlpServiceType"] = "acd"
+        details = {}
+        details["endpoint"] = os.getenv("ACD_ENDPOINT")
+        details["apikey"] = os.getenv("ACD_API_KEY")
+        details["flow"] = os.getenv("ACD_FLOW")
+        tmp_config["config"] = details
+        persist_config_helper(tmp_config)
+        logger.info("%s added:%s", tmp_config["name"], str(nlp_services_dict))
 
     if os.getenv("QUICKUMLS_ENABLE_CONFIG") == "true":
         # fill up a config for quickumls
-        try:
-            tmp_config = {}
-            tmp_config["name"] = os.getenv("QUICKUMLS_NAME")
-            tmp_config["nlpServiceType"] = "quickumls"
-            details = {}
-            details["endpoint"] = os.getenv("QUICKUMLS_ENDPOINT")
-            tmp_config["config"] = details
-            persist_config_helper(tmp_config)
-            logger.info("%s added:%s", tmp_config["name"], str(nlp_services_dict))
-        except Exception as ex:
-            logger.exception(
-                "Error when trying to persist initial config...skipping:%s", str(ex)
-            )
+        tmp_config = {}
+        tmp_config["name"] = os.getenv("QUICKUMLS_NAME")
+        tmp_config["nlpServiceType"] = "quickumls"
+        details = {}
+        details["endpoint"] = os.getenv("QUICKUMLS_ENDPOINT")
+        tmp_config["config"] = details
+        persist_config_helper(tmp_config)
+        logger.info("%s added:%s", tmp_config["name"], str(nlp_services_dict))
 
     default_nlp_service = os.getenv("NLP_SERVICE_DEFAULT")
     if default_nlp_service is not None and len(default_nlp_service) > 0:
@@ -116,8 +118,8 @@ init_configs()
 def get_config(config_name):
     """Gets and returns the given config details"""
     try:
-        json_file = open(configDir + f"/{config_name}", "r")
-        json_string = json_file.read()
+        with open(configDir + f"/{config_name}", "r", encoding="uft-8") as json_file:
+            json_string = json_file.read()
         c_dict = json.loads(json_string)
         if c_dict["nlpServiceType"] == "acd":
             c_dict["config"]["apikey"] = "*" * len(c_dict["config"]["apikey"])
@@ -134,40 +136,32 @@ def get_config(config_name):
 @app.route("/config/definition", methods=["POST", "PUT"])
 def persist_config():
     """Create a new named config"""
-    try:
-        request_str = request.data.decode("utf-8")
-        config_dict = json.loads(request_str)
-        config_name = persist_config_helper(config_dict)
-        logger.info("%s added:%s", config_name, str(nlp_services_dict))
-    except Exception as ex:
-        logger.exception("Error when trying to persist given config.")
-        return Response(
-            "Error when trying to persist given config-" + str(ex), status=400
-        )
-    logger.info("Config successfully added/updated")
+
+    request_str = request.data.decode("utf-8")
+    config_dict = json.loads(request_str)
+    config_name = persist_config_helper(config_dict)
+    logger.info("%s added config:%s", config_name, str(nlp_services_dict))
+
     return Response(status=200)
 
 
 @app.route("/config/<config_name>", methods=["DELETE"])
 def delete_config(config_name):
     """Delete a config by name"""
-    try:
-        if config_name not in nlp_services_dict:
-            raise KeyError(config_name + " must exist")
-        if nlp_service is not None:
-            current_config = json.loads(nlp_service.jsonString)
-            if config_name == current_config["name"]:
-                raise Exception("Cannot delete the default nlp service")
-        if config_name in list(override_resource_config.values()):
-            raise ValueError(
-                config_name + " has an existing override and cannot be deleted"
-            )
-        os.remove(configDir + f"/{config_name}")
-        del nlp_services_dict[config_name]
-    except Exception as ex:
-        logger.exception("Error when trying to delete config")
-        return Response("Error when trying to delete config-" + str(ex), status=400)
-    logger.info("Config successfully deleted: " + config_name)
+    if config_name not in nlp_services_dict:
+        raise KeyError(config_name + " must exist")
+    if nlp_service is not None:
+        current_config = json.loads(nlp_service.jsonString)
+        if config_name == current_config["name"]:
+            raise Exception("Cannot delete the default nlp service")
+    if config_name in list(override_resource_config.values()):
+        raise ValueError(
+            config_name + " has an existing override and cannot be deleted"
+        )
+    os.remove(configDir + f"/{config_name}")
+    del nlp_services_dict[config_name]
+
+    logger.info("Config successfully deleted: %s", config_name)
     return Response("Config successfully deleted: " + config_name, status=200)
 
 
@@ -198,23 +192,16 @@ def set_default_config():
     global nlp_service
     if request.args and request.args.get("name"):
         config_name = request.args.get("name")
-        try:
-            if config_name not in nlp_services_dict:
-                raise KeyError(config_name + " is not a config")
-            nlp_service = nlp_services_dict[config_name]
-            return Response(
-                "Default config set to: " + config_name,
-                status=200,
-                mimetype="application/plaintext",
-            )
-        except Exception:
-            logger.exception(
-                "Error in setting default with a config name of: %s", config_name
-            )
-            return Response(
-                "Error in setting default with a config name of: " + config_name,
-                status=400,
-            )
+
+        if config_name not in nlp_services_dict:
+            raise KeyError(config_name + " is not a config")
+        nlp_service = nlp_services_dict[config_name]
+        return Response(
+            "Default config set to: " + config_name,
+            status=200,
+            mimetype="application/plaintext",
+        )
+
     else:
         logger.warning("Did not provide query parameter 'name' to set default config")
         return Response(
@@ -255,35 +242,24 @@ def get_current_override_config(resource_name):
 @app.route("/config/resource/<resource_name>/<config_name>", methods=["POST", "PUT"])
 def setup_override_config(resource_name, config_name):
     """Create a new override for a given resource"""
-    try:
-        if config_name not in nlp_services_dict:
-            raise KeyError(config_name + " is not a config")
-        temp_nlp_service = nlp_services_dict[config_name]
-        if resource_name not in temp_nlp_service.types_can_handle:
-            raise ValueError(resource_name + " cannot be handled by " + config_name)
+    if config_name not in nlp_services_dict:
+        raise KeyError(config_name + " is not a config")
+    temp_nlp_service = nlp_services_dict[config_name]
+    if resource_name not in temp_nlp_service.types_can_handle:
+        raise ValueError(resource_name + " cannot be handled by " + config_name)
 
-        override_resource_config[resource_name] = config_name
+    override_resource_config[resource_name] = config_name
 
-        return Response(
-            str(override_resource_config), status=200, mimetype="application/plaintext"
-        )
-    except Exception:
-        logger.exception("Error in setting up override for resource: %s", resource_name)
-        return Response(
-            "Error in setting up override for resource: " + resource_name, status=400
-        )
+    return Response(
+        str(override_resource_config), status=200, mimetype="application/plaintext"
+    )
 
 
 @app.route("/config/resource/<resource_name>", methods=["DELETE"])
 def delete_resource(resource_name):
     """Delete a resource override by name"""
-    try:
-        del override_resource_config[resource_name]
-    except Exception:
-        return Response(
-            "Error when trying to delete override for resource: " + resource_name,
-            status=400,
-        )
+    del override_resource_config[resource_name]
+
     logger.info("Override successfully deleted: %s", resource_name)
     return Response("Override successfully deleted: " + resource_name, status=200)
 
@@ -291,82 +267,85 @@ def delete_resource(resource_name):
 @app.route("/config/resource", methods=["DELETE"])
 def delete_resources():
     """Delete all resource overrides"""
-    try:
-        override_resource_config.clear()
-    except Exception:
-        return Response("Error when trying to delete all overrides", status=400)
+    override_resource_config.clear()
+
     logger.info("Overrides successfully deleted")
     return Response("Overrides successfully deleted", status=200)
 
 
+def _derive_bundle_entries(resource: Resource) -> List[BundleEntryDfn]:
+    """Derives new bundle entries for the resource
+    
+       The returned entries may be
+        - new resources derived from text within the resource OR
+        - the same resource, with enriched concepts.
+        
+       An empty list will be returned if nothing new was derived
+       
+       Args: resource - the fhir resource
+       Returns the list of bundle entries for enriched resources
+    """
+    result: List[BundleEntryDfn] = []
+
+    if isinstance(resource, Bundle):
+        for entry in resource.entry:
+            result.extend(_derive_bundle_entries(entry.resource))
+    else:
+        nlp = _get_nlp_service_for_resource(resource)
+        text_for_new_resources: List[UnstructuredText] = get_unstructured_text(resource)
+        concepts_to_enrich = get_concepts_for_nlp_analysis(resource)
+
+        if text_for_new_resources:
+            result.extend(nlp.derive_new_resources(text_for_new_resources))
+
+        if concepts_to_enrich:
+            adjusted_concepts = [
+                adjust_concept_text(concept) for concept in concepts_to_enrich
+            ]
+            result.extend(nlp.enrich_codeable_concepts(resource, adjusted_concepts))
+
+    return result
+
+
 @app.route("/discoverInsights", methods=["POST"])
-def discover_insights():
-    """Process a bundle or a resource to enhance/augment with insights"""
+def discover_insights() -> Response:
+    """Process a bundle or a resource to enhance/augment with insights
+
+    Returns the enhanced resource, or newly derived resources to the user.
+    """
+
+    fhir_resource: Resource = parse_fhir_resource_from_payload(request.data)
+    bundle: Bundle = create_transaction_bundle(_derive_bundle_entries(fhir_resource))
+
+    if not isinstance(fhir_resource, Bundle):
+        if not bundle.entry:
+            # Nothing found, return original resource
+            return Response(
+                fhir_resource.json(), content_type="application/json", status=200
+            )
+        if len(bundle.entry) == 1 and bundle.entry[0].request == "PUT":
+            # simple update, response is bundle.entry[0].resource
+            return Response(
+                bundle.entry[0].resource.json(),
+                content_type="application/json",
+                status=200,
+            )
+
+    return Response(bundle.json(), content_type="application/json", status=200)
+
+
+def _get_nlp_service_for_resource(resource: Resource) -> NLPService:
+    global nlp_service
+
     if nlp_service is None:
         return Response(
-            "No NLP service configured-need to set a default config", status=400
+            "No NLP service has been configured, please define the config", status=400
         )
 
-    fhir_data = json.loads(request.data)  # could be resource or bundle
+    if resource.resource_type in override_resource_config:
+        return nlp_services_dict[override_resource_config[resource.resource_type]]
 
-    input_type = fhir_data["resourceType"]
-    resp_string = None
-    new_entries = []
-    if input_type == "Bundle":
-        entrylist = fhir_data["entry"]
-        for entry in entrylist:
-            if entry["resource"]["resourceType"] in nlp_service.types_can_handle:
-                resp = process_resource(entry["resource"])
-                if resp["resourceType"] == "Bundle":
-                    # response is a bundle of new resources to keep for later
-                    for new_entry in resp["entry"]:
-                        new_entries.append(
-                            new_entry
-                        )  # keep new resources to be added later
-                else:
-                    entry["resource"] = resp  # update existing resource
-
-        for new_entry in new_entries:
-            entrylist.append(new_entry)  # add new resources to bundle
-
-        resp_string = fhir_data
-    else:
-        resp_string = process_resource(
-            fhir_data
-        )  # single resource so just return response
-
-    return_response = json.dumps(resp_string)  # back to string
-
-    return Response(return_response, status=200, mimetype="application/json")
-
-
-def process_resource(request_data):
-    """Generate insights for a single resource"""
-    global nlp_service
-    
-    resource_type = request_data["resourceType"]
-    logger.info("Processing resource type: %s", resource_type)
-    nlp_service_backup = nlp_service  # save original to reset later
-    if resource_type in override_resource_config:
-        nlp_service = nlp_services_dict[override_resource_config[resource_type]]
-        logger.info(
-            "NLP engine override for %s using %s",
-            resource_type,
-            override_resource_config[resource_type],
-        )
-
-    if resource_type in nlp_service.types_can_handle:
-        enhance_func = nlp_service.types_can_handle[resource_type]
-        resp = enhance_func(nlp_service, request_data)
-        json_response = json.loads(resp)
-
-        logger.info("Resource successfully updated")
-        nlp_service = nlp_service_backup
-        return json_response
-    else:
-        logger.info("Resource not handled so respond back with original")
-        nlp_service = nlp_service_backup
-        return request_data
+    return nlp_service
 
 
 if __name__ == "__main__":
