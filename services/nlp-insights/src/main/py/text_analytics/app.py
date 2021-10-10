@@ -8,8 +8,8 @@ from fhir.resources.bundle import Bundle
 from fhir.resources.resource import Resource
 from flask import Flask, request, Response
 
-from text_analytics.fhir.fhir_object_utils import BundleEntryDfn
-from text_analytics.fhir.fhir_object_utils import create_transaction_bundle
+from text_analytics.fhir.create_bundle import BundleEntryDfn
+from text_analytics.fhir.create_bundle import create_transaction_bundle
 from text_analytics.fhir.fhir_parsing_utils import parse_fhir_resource_from_payload
 from text_analytics.insight_source.concept_text_adjustment import adjust_concept_text
 from text_analytics.insight_source.fields_of_interest import (

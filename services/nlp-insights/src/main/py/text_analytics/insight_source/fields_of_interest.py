@@ -138,7 +138,7 @@ def _get_condition_concepts_to_analyze(
             CodeableConceptRef(
                 type=CodeableConceptRefType.CONDITION,
                 code_ref=condition.code,
-                fhir_path="Condition.code"
+                fhir_path="Condition.code",
             )
         ]
 
@@ -158,7 +158,7 @@ def _get_immunization_concepts_to_analyze(
             CodeableConceptRef(
                 type=CodeableConceptRefType.VACCINE,
                 code_ref=immunization.vaccineCode,
-                fhir_path="Immunization.vaccineCode"
+                fhir_path="Immunization.vaccineCode",
             )
         ]
 

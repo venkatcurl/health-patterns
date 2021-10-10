@@ -10,7 +10,7 @@ from typing import NamedTuple
 from fhir.resources.resource import Resource
 import requests
 
-from text_analytics.fhir.fhir_object_utils import BundleEntryDfn
+from text_analytics.fhir.create_bundle import BundleEntryDfn
 from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
 from text_analytics.insight_source.unstructured_text import UnstructuredText
 from text_analytics.nlp.abstract_nlp_service import NLPService

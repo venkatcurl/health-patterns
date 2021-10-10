@@ -11,7 +11,7 @@
 # ******************************************************************************/
 """Constants and methods for understanding user provided FHIR resources
 
-   These contain tools for parsing json into FHIR resources. Also contains 
+   These contain tools for parsing json into FHIR resources. Also contains
    utils for determining the characteristics of those resources in terms of
    how insights will be generated.
 

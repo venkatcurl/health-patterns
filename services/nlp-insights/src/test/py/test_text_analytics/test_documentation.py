@@ -11,34 +11,42 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test semantic type lookup"""
 
+"""
+Test FHIR object builder utils
+"""
 import doctest
+import pkgutil
+from typing import List
 import unittest
 
-import text_analytics.umls.semtype_lookup
+import text_analytics.fhir
 
 
-class TestSemanticTypes(unittest.TestCase):
-    """Test semantic type lookup
-
-       These are tests other than documentation tests
+def load_mods(pkg : str, prefix : str ) -> List[str]:
     """
-
-    # def test_something(self):
-    #    pass
-
+    Returns list of module names to run doc test over
+    """
+    pass
 
 def load_tests(loader, tests, pattern):
     """Used by unittest to discover tests
 
-       This might not work with some custom test_text_analytics runners, and doesn't
-       apply any patterns to the tests or doc-tests that are
-       returned. It does work with the pydev test_text_analytics runner and the unittest CLI
+    This might not work with some custom test_text_analytics runners, and doesn't
+    apply any patterns to the tests or doc-tests that are
+    returned. It does work with the pydev test_text_analytics runner and the unittest CLI
     """
     del loader, pattern  # not used
-    tests.addTests(doctest.DocTestSuite(text_analytics.umls.semtype_lookup))
-    tests.addTests(unittest.makeSuite(TestSemanticTypes))
+
+    package = text_analytics
+    prefix = package.__name__ + "." 
+
+    for finder, modname, ispkg in pkgutil.walk_packages(package.__path__, prefix):
+        print(f"Found submodule {modname} (is a package: {str(ispkg)})")
+        module = __import__(modname, fromlist="dummy")
+        tests.addTests(doctest.DocTestSuite(module))
+
+
     return tests
 
 

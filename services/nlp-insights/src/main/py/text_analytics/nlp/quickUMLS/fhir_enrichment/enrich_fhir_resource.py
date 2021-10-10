@@ -21,7 +21,7 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
 
-from text_analytics.fhir.fhir_object_utils import (
+from text_analytics.fhir.create_bundle import (
     create_transaction_bundle,
     BundleEntryDfn,
 )
