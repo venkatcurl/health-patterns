@@ -17,6 +17,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import cast
 
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.dosage import Dosage, DosageDoseAndRate
@@ -146,7 +147,7 @@ def _add_insight_to_medication_statement(  # pylint: disable=too-many-arguments
     acd_output: acd.ContainerAnnotation,
     insight_id_string: str,
     nlp_config: NlpConfig,
-):
+) -> None:
     """Adds insight data to the medication statement"""
 
     insight_id_ext = create_insight_id_extension(
@@ -231,7 +232,7 @@ def _get_drug_from_annotation(annotation: acd.MedicationAnnotation) -> dict:
     # It could also be potentially problematic to assume the first entry is the
     # one that is needed.
     try:
-        return annotation.drug[0].get("name1")[0]
+        return cast(dict, annotation.drug[0].get("name1")[0])
     except (TypeError, IndexError, AttributeError):
         logger.exception(
             "Unable to retrieve drug information for attribute %s",
@@ -242,7 +243,7 @@ def _get_drug_from_annotation(annotation: acd.MedicationAnnotation) -> dict:
 
 def _update_codings_and_administration_info(  # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     med_statement: MedicationStatement, annotation: acd.MedicationAnnotation
-):
+) -> None:
     """
     Update the medication statement with the drug information from the ACD annotation
     """

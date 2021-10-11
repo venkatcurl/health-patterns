@@ -20,10 +20,10 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.wrappers import Response
 
 
-def parse_fhir_resource_from_payload(doc: str) -> Resource:
+def parse_fhir_resource_from_payload(doc: bytes) -> Resource:
     """Parses user provided json into an object
 
-       Args: doc - the json document string
+       Args: doc - the json document string (as bytes)
        Returns: Fhir Resource
 
     raises BadRequest if the provided data is not valid
@@ -39,7 +39,7 @@ def parse_fhir_resource_from_payload(doc: str) -> Resource:
     }
 
     try:
-        obj = json.loads(doc)
+        obj = json.loads(doc.decode("utf-8"))
     except JSONDecodeError as jderr:
         raise BadRequest(
             response=Response(

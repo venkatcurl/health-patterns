@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Any
 from typing import Dict
 from typing import List
 
@@ -40,14 +41,14 @@ nlp_services_dict = {}
 override_resource_config: Dict[str, str] = {}
 
 
-def setup_config_dir():
+def setup_config_dir() -> str:
     """Set up the directory structure for configs"""
     localpath = os.path.join("text_analytics", "configs")
     logger.info(localpath)
     return localpath
 
 
-def persist_config_helper(config_dict):
+def persist_config_helper(config_dict: Dict[Any, Any]) -> str:
     """Helper function to check config details and create nlp instantiation"""
 
     if "nlpServiceType" not in config_dict:
@@ -72,7 +73,7 @@ def persist_config_helper(config_dict):
     return config_name
 
 
-def init_configs():
+def init_configs() -> None:
     """Create initial configs from deployment values, if any"""
     global nlp_service
 
@@ -117,7 +118,7 @@ init_configs()
 
 
 @app.route("/config/<config_name>", methods=["GET"])
-def get_config(config_name):
+def get_config(config_name: str) -> Response:
     """Gets and returns the given config details"""
     try:
         with open(configDir + f"/{config_name}", "r", encoding="uft-8") as json_file:
@@ -136,7 +137,7 @@ def get_config(config_name):
 
 
 @app.route("/config/definition", methods=["POST", "PUT"])
-def persist_config():
+def persist_config() -> Response:
     """Create a new named config"""
 
     request_str = request.data.decode("utf-8")
@@ -148,7 +149,7 @@ def persist_config():
 
 
 @app.route("/config/<config_name>", methods=["DELETE"])
-def delete_config(config_name):
+def delete_config(config_name: str) -> None:
     """Delete a config by name"""
     if config_name not in nlp_services_dict:
         raise KeyError(config_name + " must exist")
@@ -168,7 +169,7 @@ def delete_config(config_name):
 
 
 @app.route("/all_configs", methods=["GET"])
-def get_all_configs():
+def get_all_configs() -> Response:
     """Get and return all configs by name"""
     configs = list(nlp_services_dict.keys())
     if not configs:
@@ -180,7 +181,7 @@ def get_all_configs():
 
 
 @app.route("/config", methods=["GET"])
-def get_current_config():
+def get_current_config() -> Response:
     if nlp_service is None:
         return Response("No default nlp service is currently set", status=400)
     return Response(
@@ -189,7 +190,7 @@ def get_current_config():
 
 
 @app.route("/config/setDefault", methods=["POST", "PUT"])
-def set_default_config():
+def set_default_config() -> Response:
     """Set the default nlp instance"""
     global nlp_service
     if request.args and request.args.get("name"):
@@ -212,7 +213,7 @@ def set_default_config():
 
 
 @app.route("/config/clearDefault", methods=["POST", "PUT"])
-def clear_default_config():
+def clear_default_config() -> Response:
     """Clear the default nlp instance"""
     global nlp_service
     nlp_service = None
@@ -222,7 +223,7 @@ def clear_default_config():
 
 
 @app.route("/config/resource", methods=["GET"])
-def get_current_override_configs():
+def get_current_override_configs() -> Response:
     """Get and return all override definitions"""
     return Response(
         str(override_resource_config), status=200, mimetype="application/plaintext"
@@ -230,7 +231,7 @@ def get_current_override_configs():
 
 
 @app.route("/config/resource/<resource_name>", methods=["GET"])
-def get_current_override_config(resource_name):
+def get_current_override_config(resource_name: str) -> Response:
     """Get and return override for this resource"""
     if resource_name not in override_resource_config:
         return Response("No override for this resource: " + resource_name, status=400)
@@ -242,7 +243,7 @@ def get_current_override_config(resource_name):
 
 
 @app.route("/config/resource/<resource_name>/<config_name>", methods=["POST", "PUT"])
-def setup_override_config(resource_name, config_name):
+def setup_override_config(resource_name: str, config_name: str) -> Response:
     """Create a new override for a given resource"""
     if config_name not in nlp_services_dict:
         raise KeyError(config_name + " is not a config")
@@ -258,7 +259,7 @@ def setup_override_config(resource_name, config_name):
 
 
 @app.route("/config/resource/<resource_name>", methods=["DELETE"])
-def delete_resource(resource_name):
+def delete_resource(resource_name: str) -> Response:
     """Delete a resource override by name"""
     del override_resource_config[resource_name]
 
@@ -267,7 +268,7 @@ def delete_resource(resource_name):
 
 
 @app.route("/config/resource", methods=["DELETE"])
-def delete_resources():
+def delete_resources() -> Response:
     """Delete all resource overrides"""
     override_resource_config.clear()
 
@@ -295,16 +296,23 @@ def _derive_bundle_entries(resource: Resource) -> List[BundleEntryDfn]:
     else:
         nlp = _get_nlp_service_for_resource(resource)
         text_for_new_resources: List[UnstructuredText] = get_unstructured_text(resource)
-        concepts_to_enrich = get_concepts_for_nlp_analysis(resource)
 
         if text_for_new_resources:
             result.extend(nlp.derive_new_resources(text_for_new_resources))
 
+        concepts_to_enrich = get_concepts_for_nlp_analysis(resource)
         if concepts_to_enrich:
             adjusted_concepts = [
                 adjust_concept_text(concept) for concept in concepts_to_enrich
             ]
-            result.extend(nlp.enrich_codeable_concepts(resource, adjusted_concepts))
+            if nlp.enrich_codeable_concepts(resource, adjusted_concepts):
+                result.append(
+                    BundleEntryDfn(
+                        resource=resource,
+                        method="PUT",
+                        url=resource.resource_type + "/" + str(resource.id),
+                    )
+                )
 
     return result
 
