@@ -1,13 +1,31 @@
+# Copyright 2021 IBM All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+REST interface to NLP Insights
+"""
 import json
 import logging
 import os
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import cast
 
 from fhir.resources.bundle import Bundle
 from fhir.resources.resource import Resource
 from flask import Flask, request, Response
+from werkzeug.exceptions import BadRequest
 
 from text_analytics.fhir.create_bundle import BundleEntryDfn
 from text_analytics.fhir.create_bundle import create_transaction_bundle
@@ -36,7 +54,7 @@ all_nlp_services = {"acd": ACDService, "quickumls": QuickUMLSService}
 # NLP Service currently configured
 nlp_service = None
 # Stores instances of configured NLP Services
-nlp_services_dict = {}
+nlp_services_dict: Dict[str, NLPService] = {}
 # Stores resource to config overrides
 override_resource_config: Dict[str, str] = {}
 
@@ -48,16 +66,19 @@ def setup_config_dir() -> str:
     return localpath
 
 
-def persist_config_helper(config_dict: Dict[Any, Any]) -> str:
+def persist_config_helper(config_dict: Dict[str, Any]) -> str:
     """Helper function to check config details and create nlp instantiation"""
 
     if "nlpServiceType" not in config_dict:
-        raise KeyError("'nlpService' must be a key in config")
+        raise BadRequest(description="'nlpService' must be a key in config")
     if "name" not in config_dict:
-        raise KeyError("'name' must be a key in config")
+        raise BadRequest(description="'name' must be a key in config")
     if "config" not in config_dict:
-        raise KeyError("'config' must be a key in config")
-    config_name = config_dict["name"]
+        raise BadRequest(description="'config' must be a key in config")
+    if not isinstance(config_dict["name"], str):
+        raise BadRequest(description='config["name"] must be a string')
+
+    config_name = cast(str, config_dict["name"])
     nlp_service_type = config_dict["nlpServiceType"]
     if nlp_service_type.lower() not in all_nlp_services.keys():
         raise ValueError(
@@ -66,10 +87,8 @@ def persist_config_helper(config_dict: Dict[Any, Any]) -> str:
     with open(configDir + f"/{config_name}", "w", encoding="utf-8") as json_file:
         json_file.write(json.dumps(config_dict))
 
-    new_nlp_service_object = all_nlp_services[nlp_service_type.lower()](
-        json.dumps(config_dict)
-    )
-    nlp_services_dict[config_dict["name"]] = new_nlp_service_object
+    new_nlp_service_object = all_nlp_services[nlp_service_type.lower()](config_dict)
+    nlp_services_dict[new_nlp_service_object.config_name] = new_nlp_service_object
     return config_name
 
 
@@ -80,15 +99,15 @@ def init_configs() -> None:
     logger.info("ACD enable config: %s", os.getenv("ACD_ENABLE_CONFIG"))
     logger.info("QuickUMLS enable config: %s", os.getenv("QUICKUMLS_ENABLE_CONFIG"))
 
+    details: Dict[str, str] = {}
     if os.getenv("ACD_ENABLE_CONFIG") == "true":
         # fill up a config for ACD
-        tmp_config = {}
-        tmp_config["name"] = os.getenv("ACD_NAME")
+        tmp_config: Dict[str, Any] = {}
+        tmp_config["name"] = os.getenv("ACD_NAME", "")
         tmp_config["nlpServiceType"] = "acd"
-        details = {}
-        details["endpoint"] = os.getenv("ACD_ENDPOINT")
-        details["apikey"] = os.getenv("ACD_API_KEY")
-        details["flow"] = os.getenv("ACD_FLOW")
+        details["endpoint"] = os.getenv("ACD_ENDPOINT", "")
+        details["apikey"] = os.getenv("ACD_API_KEY", "")
+        details["flow"] = os.getenv("ACD_FLOW", "")
         tmp_config["config"] = details
         persist_config_helper(tmp_config)
         logger.info("%s added:%s", tmp_config["name"], str(nlp_services_dict))
@@ -96,10 +115,9 @@ def init_configs() -> None:
     if os.getenv("QUICKUMLS_ENABLE_CONFIG") == "true":
         # fill up a config for quickumls
         tmp_config = {}
-        tmp_config["name"] = os.getenv("QUICKUMLS_NAME")
+        tmp_config["name"] = os.getenv("QUICKUMLS_NAME", "")
         tmp_config["nlpServiceType"] = "quickumls"
-        details = {}
-        details["endpoint"] = os.getenv("QUICKUMLS_ENDPOINT")
+        details["endpoint"] = os.getenv("QUICKUMLS_ENDPOINT", "")
         tmp_config["config"] = details
         persist_config_helper(tmp_config)
         logger.info("%s added:%s", tmp_config["name"], str(nlp_services_dict))
@@ -149,17 +167,17 @@ def persist_config() -> Response:
 
 
 @app.route("/config/<config_name>", methods=["DELETE"])
-def delete_config(config_name: str) -> None:
+def delete_config(config_name: str) -> Response:
     """Delete a config by name"""
     if config_name not in nlp_services_dict:
-        raise KeyError(config_name + " must exist")
+        raise BadRequest(description=f"{config_name} must exist")
     if nlp_service is not None:
-        current_config = json.loads(nlp_service.jsonString)
+        current_config = json.loads(nlp_service.json_string)
         if config_name == current_config["name"]:
-            raise Exception("Cannot delete the default nlp service")
+            raise BadRequest(description="Cannot delete the default nlp service")
     if config_name in list(override_resource_config.values()):
-        raise ValueError(
-            config_name + " has an existing override and cannot be deleted"
+        raise BadRequest(
+            description=f"f{config_name} has an existing override and cannot be deleted"
         )
     os.remove(configDir + f"/{config_name}")
     del nlp_services_dict[config_name]
@@ -183,7 +201,7 @@ def get_all_configs() -> Response:
 @app.route("/config", methods=["GET"])
 def get_current_config() -> Response:
     if nlp_service is None:
-        return Response("No default nlp service is currently set", status=400)
+        raise BadRequest(description="No default nlp service is currently set")
     return Response(
         nlp_service.config_name, status=200, mimetype="application/plaintext"
     )
@@ -196,8 +214,10 @@ def set_default_config() -> Response:
     if request.args and request.args.get("name"):
         config_name = request.args.get("name")
 
+        if not config_name:
+            raise BadRequest(description=f"{config_name} was not supplied")
         if config_name not in nlp_services_dict:
-            raise KeyError(config_name + " is not a config")
+            raise BadRequest(description=f"{config_name} is not a config")
         nlp_service = nlp_services_dict[config_name]
         return Response(
             "Default config set to: " + config_name,
@@ -247,9 +267,6 @@ def setup_override_config(resource_name: str, config_name: str) -> Response:
     """Create a new override for a given resource"""
     if config_name not in nlp_services_dict:
         raise KeyError(config_name + " is not a config")
-    temp_nlp_service = nlp_services_dict[config_name]
-    if resource_name not in temp_nlp_service.types_can_handle:
-        raise ValueError(resource_name + " cannot be handled by " + config_name)
 
     override_resource_config[resource_name] = config_name
 
@@ -348,8 +365,8 @@ def _get_nlp_service_for_resource(resource: Resource) -> NLPService:
     global nlp_service
 
     if nlp_service is None:
-        return Response(
-            "No NLP service has been configured, please define the config", status=400
+        raise BadRequest(
+            description="No NLP service has been configured, please define the config"
         )
 
     if resource.resource_type in override_resource_config:

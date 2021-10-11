@@ -21,7 +21,6 @@ from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 imp
 )
 
 from test_text_analytics.util.blank import (
-    blank_acd_evidence_detail_in_bundle,
     blank_acd_evidence_detail_in_resource,
 )
 from test_text_analytics.util.resources import UnitTestUsingExternalResource

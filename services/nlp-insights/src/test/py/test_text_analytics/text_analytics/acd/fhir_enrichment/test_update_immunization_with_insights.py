@@ -1,14 +1,16 @@
-# *******************************************************************************
-# IBM Confidential                                                            *
-#                                                                             *
-# OCO Source Materials                                                        *
-#                                                                             *
-# (C) Copyright IBM Corp. 2021                                                *
-#                                                                             *
-# The source code for this program is not published or otherwise              *
-# divested of its trade secrets, irrespective of what has been                *
-# deposited with the U.S. Copyright Office.                                   *
-# ******************************************************************************/
+# Copyright 2021 IBM All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import json
 import unittest
@@ -26,10 +28,7 @@ from text_analytics.insight_source.fields_of_interest import (
     CodeableConceptRef,
     CodeableConceptRefType,
 )
-from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
-    create_new_resources_from_insights,
-    create_conditions_from_insights,
-)
+
 from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     enrich_resource_codeable_concepts,
 )
@@ -68,7 +67,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
             )
         ]
 
-        num_updates = update_codeable_concepts_and_meta_with_insights(
+        update_codeable_concepts_and_meta_with_insights(
             immunization, ai_results, ACD_NLP_CONFIG
         )
 

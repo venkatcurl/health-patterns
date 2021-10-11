@@ -24,7 +24,10 @@ from ibm_whcs_sdk.annotator_for_clinical_data.annotator_for_clinical_data_v1 imp
 
 from test_text_analytics.util.resources import UnitTestUsingExternalResource
 from text_analytics.insight_source.concept_text_adjustment import AdjustedConceptRef
-from text_analytics.insight_source.fields_of_interest import CodeableConceptRef, CodeableConceptRefType
+from text_analytics.insight_source.fields_of_interest import (
+    CodeableConceptRef,
+    CodeableConceptRefType,
+)
 from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     enrich_resource_codeable_concepts,
 )
@@ -34,6 +37,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts im
 )
 
 from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+
 
 # Note: Not testing path where existing condition resource does not produce insights as this is common code with allergy and immunization
 class EnhanceConditionWithInsightsTest(UnitTestUsingExternalResource):
@@ -63,7 +67,7 @@ class EnhanceConditionWithInsightsTest(UnitTestUsingExternalResource):
             )
         ]
 
-        num_updates = update_codeable_concepts_and_meta_with_insights(
+        update_codeable_concepts_and_meta_with_insights(
             condition, ai_results, ACD_NLP_CONFIG
         )
 
@@ -153,7 +157,9 @@ class EnhanceConditionWithInsightsTest(UnitTestUsingExternalResource):
             + "/acd/mock_fhir/output/update_structured/Bundle_update_condition_sleep_apnea.json"
         )
         with open(
-            self.resource_path + "/acd/mock_acd_output/condition_sleep_apnea.json", "r"
+            self.resource_path + "/acd/mock_acd_output/condition_sleep_apnea.json",
+            "r",
+            encoding="utf-8",
         ) as f:
             acd_result = ContainerAnnotation.from_dict(json.loads(f.read()))
         self._condition_bundle_update(input_json, expected_json, acd_result)

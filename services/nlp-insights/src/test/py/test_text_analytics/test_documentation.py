@@ -17,17 +17,9 @@ Test FHIR object builder utils
 """
 import doctest
 import pkgutil
-from typing import List
 import unittest
 
 import text_analytics.fhir
-
-
-def load_mods(pkg: str, prefix: str) -> List[str]:
-    """
-    Returns list of module names to run doc test over
-    """
-    pass
 
 
 def load_tests(loader, tests, pattern):
@@ -42,7 +34,7 @@ def load_tests(loader, tests, pattern):
     package = text_analytics
     prefix = package.__name__ + "."
 
-    for finder, modname, ispkg in pkgutil.walk_packages(package.__path__, prefix):
+    for _finder, modname, ispkg in pkgutil.walk_packages(package.__path__, prefix):
         print(f"Found submodule {modname} (is a package: {str(ispkg)})")
         module = __import__(modname, fromlist="dummy")
         tests.addTests(doctest.DocTestSuite(module))

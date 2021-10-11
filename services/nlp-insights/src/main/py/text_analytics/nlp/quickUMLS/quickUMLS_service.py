@@ -4,6 +4,7 @@ Defines an NLP service concrete class for QuickUMLS NLP.
 """
 import json
 import logging
+from typing import Dict, Any
 from typing import List
 from typing import NamedTuple
 
@@ -37,11 +38,9 @@ class QuickUMLSService(NLPService):
     The QuickUMLS Service is able to detect UMLS cuis in unstructured text.
     """
 
-    def __init__(self, json_string: str) -> None:
-        config_dict = json.loads(json_string)
-        self.quick_umls_url = config_dict["config"]["endpoint"]
-        self.json_string = json_string
-        self.config_name = config_dict["name"]
+    def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__(config)
+        self.quick_umls_url = config["config"]["endpoint"]
         self.nlp_config = QUICK_UMLS_NLP_CONFIG
 
     def _run_nlp(self, text: str) -> NlpResponse:

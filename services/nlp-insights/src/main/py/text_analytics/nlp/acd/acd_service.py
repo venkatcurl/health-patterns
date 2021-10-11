@@ -1,9 +1,22 @@
+# Copyright 2021 IBM All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Defines an NLP service concrete class for working with ACD
 """
 
-import json
 import logging
+from typing import Dict, Any
 from typing import List
 from typing import NamedTuple
 
@@ -39,17 +52,15 @@ class ACDService(NLPService):
     PROCESS_TYPE_UNSTRUCTURED = "ACD Unstructured"
     PROCESS_TYPE_STRUCTURED = "ACD Structured"
 
-    def __init__(self, json_string: str) -> None:
+    def __init__(self, config: Dict[str, Any]) -> None:
         """Initializes the ACD service from a json configuration string"""
-        config_dict = json.loads(json_string)
-        self.acd_key = config_dict["config"]["apikey"]
-        self.acd_url = config_dict["config"]["endpoint"]
-        self.acd_flow = config_dict["config"]["flow"]
-        self.config_name = config_dict["name"]
-        self.json_string = json_string
+        super().__init__(config)
+        self.acd_key = config["config"]["apikey"]
+        self.acd_url = config["config"]["endpoint"]
+        self.acd_flow = config["config"]["flow"]
         self.nlp_config = ACD_NLP_CONFIG
-        if config_dict.get("version") is not None:
-            self.version = config_dict.get("version")
+        if config.get("version"):
+            self.version = config.get("version")
         else:
             self.version = "2021-01-01"
 

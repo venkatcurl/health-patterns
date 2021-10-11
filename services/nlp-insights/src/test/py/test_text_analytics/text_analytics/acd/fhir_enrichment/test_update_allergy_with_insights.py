@@ -318,7 +318,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
                         )
                 elif "RASH" in mf.text:
                     with open(
-                        self.resource_path + "/acd/mock_acd_output/rash.json", "r"
+                        self.resource_path + "/acd/mock_acd_output/rash.json", "r", encoding="utf-8"
                     ) as f:
                         acd_result_rash = ContainerAnnotation.from_dict(
                             json.loads(f.read())
