@@ -125,7 +125,9 @@ def create_conditions_from_insights(
         if resource_relevant_to_any_type_names(Condition, nlp_cui.types):
             if nlp_cui.cui not in condition_tracker:
                 condition_tracker[nlp_cui.cui] = TrackerEntry(
-                    fhir_resource=Condition.construct(subject=text_source.source_resource.subject),
+                    fhir_resource=Condition.construct(
+                        subject=text_source.source_resource.subject
+                    ),
                     id_maker=insight_id_maker(start=nlp_config.insight_id_start),
                 )
 

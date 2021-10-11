@@ -93,7 +93,9 @@ def create_new_resources_from_insights(
     Returns a bundle of derived resources, or None if no resources were derived
     """
     conditions = create_conditions_from_insights(text_source, insights, nlp_config)
-    med_statements = create_med_statements_from_insights(text_source, insights, nlp_config)
+    med_statements = create_med_statements_from_insights(
+        text_source, insights, nlp_config
+    )
 
     if not conditions and not med_statements:
         return None

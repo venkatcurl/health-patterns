@@ -23,6 +23,7 @@ class Span(NamedTuple):
 
     Typically a span is the source of an insight
     """
+
     begin: int
     end: int
     covered_text: str
