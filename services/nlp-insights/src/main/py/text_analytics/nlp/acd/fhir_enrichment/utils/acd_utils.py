@@ -11,6 +11,7 @@
 # ******************************************************************************/
 
 
+import logging
 from typing import Generator
 from typing import Iterable
 from typing import List
@@ -18,6 +19,9 @@ from typing import List
 from ibm_whcs_sdk.annotator_for_clinical_data import (
     annotator_for_clinical_data_v1 as acd,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def filter_attribute_values(
@@ -32,3 +36,7 @@ def filter_attribute_values(
     for attr in attribute_values:
         if attr.name in values:
             yield attr
+        else:
+            logger.debug(
+                "attr %s was not considered because it is not in %s", attr.name, values
+            )

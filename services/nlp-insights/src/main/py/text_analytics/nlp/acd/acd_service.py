@@ -15,6 +15,7 @@
 Defines an NLP service concrete class for working with ACD
 """
 
+import json
 import logging
 from typing import Dict, Any
 from typing import List
@@ -72,6 +73,8 @@ class ACDService(NLPService):
         service.set_service_url(self.acd_url)
         logger.info("Calling ACD-%s with text %s", self.config_name, text)
         resp = service.analyze_with_flow(self.acd_flow, text)
+        if logging.DEBUG >= logger.level and resp is not None:
+            logger.debug("ACD Response: %s ", json.dumps(resp.to_dict(), indent=2))
         return resp
 
     def derive_new_resources(

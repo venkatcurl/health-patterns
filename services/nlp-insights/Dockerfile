@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.8-slim-buster
+FROM python:3.9-slim-buster
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY setup.properties setup.properties
 
 RUN pip3 install -r pinned.txt
 
-COPY . .
+COPY /src/main/py .
 
 RUN pip3 install .
 

@@ -29,13 +29,13 @@ from fhir.resources.resource import Resource
 
 
 # Data type that represents FHIR resources with unstructured notes
-UnstructuredFhirResourceType = Union[DiagnosticReport, DocumentReference]
+UnstructuredFhirResource = Union[DiagnosticReport, DocumentReference]
 
 
 class UnstructuredText(NamedTuple):
     """Models text data that can be used to derive new FHIR resources"""
 
-    source_resource: UnstructuredFhirResourceType
+    source_resource: UnstructuredFhirResource
     fhir_path: str
     text: str
 
@@ -94,10 +94,10 @@ def _get_document_reference_data(
             UnstructuredText(
                 source_resource=doc_ref,
                 fhir_path=f"DocumentReference.content[{ix}].attachment.data",
-                text=_decode_text(attachment.data),
+                text=_decode_text(content.attachment.data),
             )
-            for ix, attachment in enumerate(doc_ref.content)
-            if attachment and attachment.data
+            for ix, content in enumerate(doc_ref.content)
+            if content.attachment and content.attachment.data
         ]
 
     return []

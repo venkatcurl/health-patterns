@@ -6,7 +6,6 @@ plugins {
 }
 
 group = ''
-version = ""
 description = """NLP Insights"""
 
 sonarqube {
@@ -101,7 +100,7 @@ task textAnalyticsPyFlake8(type: PythonTask) {
 }
 
 docker {
-     copySpec.from(".").into(".").include("pinned.txt", "setup.py", "setup.properties", "text_analytics/**")
+     copySpec.from(".").into(".").include("pinned.txt", "setup.py", "setup.properties", "src/main/py/text_analytics/**")
      name dockerUser + "/nlp-insights:" + version
      dockerfile file('Dockerfile')
 }

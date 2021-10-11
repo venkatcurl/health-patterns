@@ -26,6 +26,7 @@ from fhir.resources.bundle import Bundle
 from fhir.resources.condition import Condition
 from fhir.resources.diagnosticreport import DiagnosticReport
 from fhir.resources.documentreference import DocumentReference
+from fhir.resources.immunization import Immunization
 from fhir.resources.medicationstatement import MedicationStatement
 from fhir.resources.resource import Resource
 from pydantic import ValidationError
@@ -49,13 +50,14 @@ def parse_fhir_resource_from_payload(doc: bytes) -> Resource:
         "DocumentReference": DocumentReference.parse_obj,
         "DiagnosticReport": DiagnosticReport.parse_obj,
         "AllergyIntolerance": AllergyIntolerance.parse_obj,
+        "Immunization": Immunization.parse_obj,
     }
 
     try:
         obj = json.loads(doc.decode("utf-8"))
     except JSONDecodeError as jderr:
         raise BadRequest(
-            description=f"Resource was not valid json {str(jderr)}"
+            description=f"Resource was not valid json: {str(jderr)}"
         ) from jderr
 
     if "resourceType" in obj and obj["resourceType"] in parsers:
@@ -63,11 +65,15 @@ def parse_fhir_resource_from_payload(doc: bytes) -> Resource:
             return parsers[obj["resourceType"]](obj)
         except ValidationError as verr:
             raise BadRequest(
-                response=Response(verr.json(), content_type="application/json")
+                response=Response(
+                    verr.json(), content_type="application/json", status=400
+                )
             ) from verr
 
     else:
         resource_type = (
             obj["resourceType"] if "resourceType" in obj else "<not specified> "
         )
-        raise BadRequest(description=f"The resource type {resource_type} is not valid")
+        raise BadRequest(
+            description=f"The resource type {resource_type} is not supported"
+        )

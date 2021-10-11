@@ -70,7 +70,7 @@ def _append_codes_from_nlp_cui(
     if nlp_cui.cui not in existing_codes_by_system[UMLS_URL]:
         existing_codes_by_system[UMLS_URL].add(nlp_cui.cui)
         fhir_object_utils.append_derived_by_nlp_coding(
-            concept_ref,
+            concept_ref.code_ref,
             UMLS_URL,
             nlp_cui.cui,
             nlp_cui.preferred_name,
@@ -82,7 +82,7 @@ def _append_codes_from_nlp_cui(
             if snomed_code not in existing_codes_by_system[SNOMED_URL]:
                 existing_codes_by_system[SNOMED_URL].add(nlp_cui.cui)
                 fhir_object_utils.append_derived_by_nlp_coding(
-                    concept_ref, SNOMED_URL, snomed_code
+                    concept_ref.code_ref, SNOMED_URL, snomed_code
                 )
                 codes_added += 1
 
@@ -114,11 +114,11 @@ def _add_codeable_concept_insight(
     codes_added = 0
     concept_ref: CodeableConceptRef = nlp_concept_ref.adjusted_concept.concept_ref
 
-    if concept_ref.code_ref.coding.code is None:
-        concept_ref.code_ref.coding.code = []
+    if concept_ref.code_ref.coding is None:
+        concept_ref.code_ref.coding = []
 
     existing_codes_by_system = fhir_object_utils.get_existing_codes_by_system(
-        concept_ref.code_ref.code.coding
+        concept_ref.code_ref.coding
     )
     for nlp_cui in _relevant_nlp_cuis(concept_ref.type, nlp_concept_ref.nlp_response):
         codes_added += _append_codes_from_nlp_cui(

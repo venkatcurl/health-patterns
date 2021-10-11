@@ -43,21 +43,21 @@ def _add_insight_codings_to_medication_stmt(
         medication_stmt - condition to update
         nlp_cui   - concept with data to update the condition with
     """
-    if medication_stmt.code is None:
+    if medication_stmt.medicationCodeableConcept is None:
         codeable_concept = CodeableConcept.construct(
             text=nlp_cui.preferred_name, coding=[]
         )
-        medication_stmt.code = codeable_concept
+        medication_stmt.medicationCodeableConcept = codeable_concept
 
     existing_codes_by_system = fhir_object_utils.get_existing_codes_by_system(
-        medication_stmt.code.coding
+        medication_stmt.medicationCodeableConcept.coding
     )
 
     if nlp_cui.cui not in existing_codes_by_system[UMLS_URL]:
         coding = fhir_object_utils.create_coding(
             UMLS_URL, nlp_cui.cui, derived_by_nlp=False
         )
-        medication_stmt.code.coding.append(coding)
+        medication_stmt.medicationCodeableConcept.coding.append(coding)
         existing_codes_by_system[UMLS_URL].add(nlp_cui.cui)
 
     if nlp_cui.snomed_ct:
@@ -66,7 +66,7 @@ def _add_insight_codings_to_medication_stmt(
                 coding = fhir_object_utils.create_coding(
                     SNOMED_URL, snomed_code, derived_by_nlp=False
                 )
-                medication_stmt.code.coding.append(coding)
+                medication_stmt.medicationCodeableConcept.coding.append(coding)
                 existing_codes_by_system[SNOMED_URL].add(snomed_code)
 
 

@@ -17,16 +17,14 @@ from typing import Optional
 
 from fhir.resources.bundle import Bundle
 from fhir.resources.resource import Resource
-from ibm_whcs_sdk.annotator_for_clinical_data import (
-    annotator_for_clinical_data_v1 as acd,
-)
 
 from text_analytics.fhir.create_bundle import (
     create_transaction_bundle,
     BundleEntryDfn,
 )
-from text_analytics.insight_source.unstructured_text import UnstructuredFhirResourceType
+from text_analytics.insight_source.unstructured_text import UnstructuredFhirResource
 from text_analytics.nlp.nlp_config import NlpConfig, QUICK_UMLS_NLP_CONFIG
+from text_analytics.nlp.nlp_reponse import NlpResponse
 from text_analytics.nlp.quickUMLS.fhir_enrichment.insights.create_condition import (
     create_conditions_from_insights,
 )
@@ -74,11 +72,11 @@ def enrich_resource_codeable_concepts(
 
 
 def create_new_resources_from_insights(
-    source_resource: UnstructuredFhirResourceType,
-    insights: acd.ContainerAnnotation,
+    source_resource: UnstructuredFhirResource,
+    insights: NlpResponse,
     nlp_config: NlpConfig = QUICK_UMLS_NLP_CONFIG,
 ) -> Optional[Bundle]:
-    """Creates a bundle of new (derived) resources from ACD insights
+    """Creates a bundle of new (derived) resources from NLP insights
 
        This is called when a source resource contains unstructured text, such as
        a diagnostic report or a document reference. NLP is run against the

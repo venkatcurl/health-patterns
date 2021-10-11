@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from typing import Generator
 from typing import Iterable
 from typing import List
@@ -36,6 +37,9 @@ from text_analytics.nlp.acd.fhir_enrichment.utils.acd_utils import (
     filter_attribute_values,
 )
 from text_analytics.nlp.nlp_config import NlpConfig
+
+
+logger = logging.getLogger(__name__)
 
 
 class AcdConceptRef(NamedTuple):
@@ -74,6 +78,8 @@ def _get_source_for_attribute(
     for concept in concepts:
         if concept.uid == uid:
             return concept
+
+    logger.debug("Concept uid=%s was not found", uid)
     return None
 
 
@@ -111,18 +117,29 @@ def _add_codeable_concept_insight(
         ):
             acd_concept: acd.Concept = _get_source_for_attribute(attr, concepts)
 
-            num_codes_appended: int = _append_codings_with_nlp_derived_extension(
-                acd_concept, concept_ref.code_ref
-            )
+            if acd_concept:
+                logger.debug("Appending codings for concept: %s", acd_concept)
 
-            if num_codes_appended > 0:
-                total_num_codes_added += num_codes_appended
-                fhir_object_utils.append_insight_with_path_expr_to_resource_meta(
-                    fhir_resource=fhir_resource,
-                    insight_id=next(id_maker),
-                    system=nlp_config.nlp_system,
-                    fhir_path=insight.adjusted_concept.concept_ref.fhir_path,
-                    nlp_output_uri=nlp_config.get_nlp_output_loc(insight.acd_response),
+                num_codes_appended: int = _append_codings_with_nlp_derived_extension(
+                    acd_concept, concept_ref.code_ref
+                )
+
+                if num_codes_appended > 0:
+                    total_num_codes_added += num_codes_appended
+                    fhir_object_utils.append_insight_with_path_expr_to_resource_meta(
+                        fhir_resource=fhir_resource,
+                        insight_id=next(id_maker),
+                        system=nlp_config.nlp_system,
+                        fhir_path=insight.adjusted_concept.concept_ref.fhir_path,
+                        nlp_output_uri=nlp_config.get_nlp_output_loc(
+                            insight.acd_response
+                        ),
+                    )
+            else:
+                logger.debug(
+                    "could not find a umls concept for attribute %s in concepts %s",
+                    attr,
+                    concepts,
                 )
 
     return total_num_codes_added

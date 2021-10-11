@@ -23,6 +23,8 @@ from typing import List
 from typing import cast
 
 from fhir.resources.bundle import Bundle
+from fhir.resources.diagnosticreport import DiagnosticReport
+from fhir.resources.documentreference import DocumentReference
 from fhir.resources.resource import Resource
 from flask import Flask, request, Response
 from werkzeug.exceptions import BadRequest
@@ -81,10 +83,10 @@ def persist_config_helper(config_dict: Dict[str, Any]) -> str:
     config_name = cast(str, config_dict["name"])
     nlp_service_type = config_dict["nlpServiceType"]
     if nlp_service_type.lower() not in all_nlp_services.keys():
-        raise ValueError(
-            "only 'acd' and 'quickumls' allowed at this time:" + nlp_service_type
+        raise BadRequest(
+            description=f"only 'acd' and 'quickumls' allowed at this time: {nlp_service_type}"
         )
-    with open(configDir + f"/{config_name}", "w", encoding="utf-8") as json_file:
+    with open(f"{configDir}/{config_name}", "w", encoding="utf-8") as json_file:
         json_file.write(json.dumps(config_dict))
 
     new_nlp_service_object = all_nlp_services[nlp_service_type.lower()](config_dict)
@@ -225,11 +227,10 @@ def set_default_config() -> Response:
             mimetype="application/plaintext",
         )
 
-    else:
-        logger.warning("Did not provide query parameter 'name' to set default config")
-        return Response(
-            "Did not provide query parameter 'name' to set default config", status=400
-        )
+    logger.warning("Did not provide query parameter 'name' to set default config")
+    raise BadRequest(
+        description="Did not provide query parameter 'name' to set default config"
+    )
 
 
 @app.route("/config/clearDefault", methods=["POST", "PUT"])
@@ -345,12 +346,21 @@ def discover_insights() -> Response:
     bundle: Bundle = create_transaction_bundle(_derive_bundle_entries(fhir_resource))
 
     if not isinstance(fhir_resource, Bundle):
-        if not bundle.entry:
-            # Nothing found, return original resource
+        if not bundle.entry and not (
+            isinstance(fhir_resource, DiagnosticReport)
+            or isinstance(fhir_resource, DocumentReference)
+        ):
+            # Nothing changed, return original resource, except for types that
+            # are considered "unstructured, those should be empty bundle"
             return Response(
                 fhir_resource.json(), content_type="application/json", status=200
             )
-        if len(bundle.entry) == 1 and bundle.entry[0].request == "PUT":
+        if (
+            len(bundle.entry) == 1
+            and bundle.entry[0].request
+            and bundle.entry[0].request.method
+            and bundle.entry[0].request.method == "PUT"
+        ):
             # simple update, response is bundle.entry[0].resource
             return Response(
                 bundle.entry[0].resource.json(),
@@ -376,4 +386,4 @@ def _get_nlp_service_for_resource(resource: Resource) -> NLPService:
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=False, host="0.0.0.0", port=5000)

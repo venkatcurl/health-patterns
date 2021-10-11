@@ -14,7 +14,7 @@
 
 
 # List of NLP annotations to use by FHIR resource type
-ANNOTATION_TYPE_ALLERGY = ["CDP-Allergy"]
+ANNOTATION_TYPE_ALLERGY = ["CDP-Allergy", "MedicationAllergy", "Diagnosis"]
 ANNOTATION_TYPE_CONDITION = ["CDP-Condition"]
 ANNOTATION_TYPE_IMMUNIZATION = ["CDP-Immunization"]
 ANNOTATION_TYPE_MEDICATION = ["CDP-Medication"]
