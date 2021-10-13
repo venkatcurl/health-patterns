@@ -36,7 +36,6 @@ from text_analytics.fhir.fhir_object_utils import (
     create_insight_id_extension,
     add_insight_to_meta,
     append_derived_by_nlp_extension,
-    append_coding,
     create_confidence_extension,
 )
 from text_analytics.insight import insight_constants
@@ -44,11 +43,16 @@ from text_analytics.insight.insight_id import insight_id_maker
 from text_analytics.insight.span import Span
 from text_analytics.insight.text_fragment import TextFragment
 from text_analytics.insight_source.unstructured_text import UnstructuredText
-from text_analytics.nlp.acd.fhir_enrichment.insights.enrichment_constants import (
-    ANNOTATION_TYPE_CONDITION,
+from text_analytics.nlp.acd.fhir_enrichment.insights.append_codings import (
+    append_codings,
+    get_concept_display_text,
 )
-from text_analytics.nlp.acd.fhir_enrichment.utils.acd_utils import (
-    filter_attribute_values,
+from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import (
+    get_attribute_sources,
+    AttrSourceConcept,
+)
+from text_analytics.nlp.acd.fhir_enrichment.insights.cdp_attribute_source_info import (
+    RELEVANT_ANNOTATIONS_CDP,
 )
 from text_analytics.nlp.nlp_config import NlpConfig
 
@@ -67,30 +71,37 @@ def create_conditions_from_insights(
 
     Returns conditions derived by NLP, or None if there are no conditions
     """
-    acd_attrs: List[acd.AttributeValueAnnotation] = acd_output.attribute_values
+    # acd_attrs: List[acd.AttributeValueAnnotation] = acd_output.attribute_values
     TrackerEntry = namedtuple("TrackerEntry", ["fhir_resource", "id_maker"])
     condition_tracker = {}  # key is UMLS ID, value is TrackerEntry
+    source_loc_map = (
+        nlp_config.acd_attribute_source_map
+        if nlp_config.acd_attribute_source_map
+        else RELEVANT_ANNOTATIONS_CDP
+    )
 
-    acd_concepts: List[acd.Concept] = acd_output.concepts
-    if acd_attrs and acd_concepts:
-        for attr in filter_attribute_values(acd_attrs, ANNOTATION_TYPE_CONDITION):
-            concept = _get_concept_for_attribute(attr, acd_concepts)
-            if concept:
-                if concept.cui not in condition_tracker:
-                    condition_tracker[concept.cui] = TrackerEntry(
+    for cui_source in get_attribute_sources(acd_output, Condition, source_loc_map):
+        if cui_source.sources:
+            # first available source is the best one
+            source: AttrSourceConcept = next(iter(cui_source.sources.values()))
+
+            if source and hasattr(source, "cui") and source.cui:
+
+                if source.cui not in condition_tracker:
+                    condition_tracker[source.cui] = TrackerEntry(
                         fhir_resource=Condition.construct(
                             subject=text_source.source_resource.subject
                         ),
                         id_maker=insight_id_maker(start=nlp_config.insight_id_start),
                     )
 
-                condition, id_maker = condition_tracker[concept.cui]
+                condition, id_maker = condition_tracker[source.cui]
 
                 _add_insight_to_condition(
                     text_source,
                     condition,
-                    attr,
-                    concept,
+                    cui_source.attr,
+                    source,
                     acd_output,
                     next(id_maker),
                     nlp_config,
@@ -134,7 +145,7 @@ def _add_insight_to_condition(  # pylint: disable=too-many-arguments;
     text_source: UnstructuredText,
     condition: Condition,
     attr: acd.AttributeValueAnnotation,
-    concept: acd.Concept,
+    cui_source: AttrSourceConcept,
     acd_output: acd.ContainerAnnotation,
     insight_id_string: str,
     nlp_config: NlpConfig,
@@ -149,7 +160,11 @@ def _add_insight_to_condition(  # pylint: disable=too-many-arguments;
         text_span=Span(begin=attr.begin, end=attr.end, covered_text=attr.covered_text),
     )
 
-    confidences = get_diagnosis_confidences(attr.insight_model_data)
+    confidences = (
+        get_diagnosis_confidences(attr.insight_model_data)
+        if attr.insight_model_data
+        else None
+    )
 
     nlp_output_ext = nlp_config.create_nlp_output_extension(acd_output)
 
@@ -163,11 +178,11 @@ def _add_insight_to_condition(  # pylint: disable=too-many-arguments;
 
     add_insight_to_meta(condition, insight_id_ext, unstructured_insight_detail)
 
-    _add_insight_codings_to_condition(condition, concept)
+    _add_insight_codings_to_condition(condition, cui_source)
 
 
 def _add_insight_codings_to_condition(
-    condition: Condition, concept: acd.Concept
+    condition: Condition, concept: AttrSourceConcept
 ) -> None:
     """Adds information from the insight's concept to a condition
 
@@ -177,76 +192,11 @@ def _add_insight_codings_to_condition(
     """
     if condition.code is None:
         codeable_concept = CodeableConcept.construct()
-        codeable_concept.text = concept.preferred_name
+        codeable_concept.text = get_concept_display_text(concept)
         condition.code = codeable_concept
         codeable_concept.coding = []
 
-    add_codings(concept, condition.code)
-
-
-def add_codings(concept: acd.Concept, codeable_concept: CodeableConcept) -> None:
-    """
-    Adds codes from the concept to the codeable_concept.
-
-    Does not add an extension indicating the code is derived.
-    Parameters:
-        concept - ACD concept
-        codeable_concept - FHIR codeable concept the codes will be added to
-    """
-    if concept.cui is not None:
-        # For CUIs, we do not handle comma-delimited values (have not seen that we ever have more than one value)
-        append_coding(
-            codeable_concept,
-            insight_constants.UMLS_URL,
-            concept.cui,
-            concept.preferred_name,
-        )
-
-    if concept.snomed_concept_id:
-        _append_coding_entries(
-            codeable_concept, insight_constants.SNOMED_URL, concept.snomed_concept_id
-        )
-    if concept.nci_code:
-        _append_coding_entries(
-            codeable_concept, insight_constants.NCI_URL, concept.nci_code
-        )
-    if concept.loinc_id:
-        _append_coding_entries(
-            codeable_concept, insight_constants.LOINC_URL, concept.loinc_id
-        )
-    if concept.mesh_id:
-        _append_coding_entries(
-            codeable_concept, insight_constants.MESH_URL, concept.mesh_id
-        )
-    if concept.icd9_code:
-        _append_coding_entries(
-            codeable_concept, insight_constants.ICD9_URL, concept.icd9_code
-        )
-    if concept.icd10_code:
-        _append_coding_entries(
-            codeable_concept, insight_constants.ICD10_URL, concept.icd10_code
-        )
-    if concept.rx_norm_id:
-        _append_coding_entries(
-            codeable_concept, insight_constants.RXNORM_URL, concept.rx_norm_id
-        )
-
-
-def _append_coding_entries(
-    codeable_concept: CodeableConcept, system: str, csv_ids: str
-) -> None:
-    """Appends multiple codings when the id may be a csv list of codes
-
-    An NLP derived extension is NOT added.
-    A code will not be added if a code with the same system and id already exists
-
-    Args:
-        codeable_concept - concept to add code to
-        system - system for the code
-        id - and id for csv of ids to add codings for
-    """
-    for code_id in csv_ids.split(","):
-        append_coding(codeable_concept, system, code_id)
+    append_codings(concept, condition.code, add_nlp_extension=False)
 
 
 def get_diagnosis_confidences(

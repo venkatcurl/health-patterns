@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Low level NLP configuration"""
+from dataclasses import dataclass
 from typing import Any
 from typing import Callable
-from typing import NamedTuple
+from typing import Generator
 from typing import Optional
 
 from fhir.resources.extension import Extension
@@ -24,13 +25,23 @@ from ibm_whcs_sdk.annotator_for_clinical_data import (
 
 from text_analytics.fhir import fhir_object_utils
 
+from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import (
+    AttributeNameAndSourceMap,
+)
 
-class NlpConfig(NamedTuple):
+from text_analytics.nlp.acd.fhir_enrichment.insights.cdp_attribute_source_info import (
+    RELEVANT_ANNOTATIONS_CDP,
+)
+
+
+@dataclass
+class NlpConfig:
     """NLP Configuration Settings"""
 
     nlp_system: str
     get_nlp_output_loc: Callable[[Any], Optional[str]]
     insight_id_start: int = 1
+    acd_attribute_source_map: Optional[AttributeNameAndSourceMap] = None
 
     def create_nlp_output_extension(self, nlp_output: Any) -> Optional[Extension]:
         """Creates an NLP output extension
@@ -56,6 +67,7 @@ def acd_get_nlp_output_loc(nlp_output: acd.ContainerAnnotation) -> str:
 ACD_NLP_CONFIG = NlpConfig(
     nlp_system="urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0",
     get_nlp_output_loc=acd_get_nlp_output_loc,
+    acd_attribute_source_map=RELEVANT_ANNOTATIONS_CDP,
 )
 
 

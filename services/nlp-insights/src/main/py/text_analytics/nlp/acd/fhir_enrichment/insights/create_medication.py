@@ -49,11 +49,12 @@ from text_analytics.insight.insight_id import insight_id_maker
 from text_analytics.insight.span import Span
 from text_analytics.insight.text_fragment import TextFragment
 from text_analytics.insight_source.unstructured_text import UnstructuredText
-from text_analytics.nlp.acd.fhir_enrichment.insights.enrichment_constants import (
-    ANNOTATION_TYPE_MEDICATION,
+from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import (
+    get_attribute_sources,
+    AttrSourceConcept,
 )
-from text_analytics.nlp.acd.fhir_enrichment.utils.acd_utils import (
-    filter_attribute_values,
+from text_analytics.nlp.acd.fhir_enrichment.insights.cdp_attribute_source_info import (
+    RELEVANT_ANNOTATIONS_CDP,
 )
 from text_analytics.nlp.nlp_config import NlpConfig
 
@@ -74,35 +75,53 @@ def create_med_statements_from_insights(
 
     Returns medication statements derived from NLP, or None if there are no such statements
     """
-    # build insight set from ACD output
-    acd_attrs: List[acd.AttributeValueAnnotation] = acd_output.attribute_values
     TrackerEntry = namedtuple("TrackerEntry", ["fhir_resource", "id_maker"])
     med_statement_tracker = {}  # key is UMLS ID, value is TrackerEntry
 
-    if acd_attrs and acd_output.medication_ind:
-        acd_medicationInds: List[acd.MedicationAnnotation] = acd_output.medication_ind
-        for attr in filter_attribute_values(acd_attrs, ANNOTATION_TYPE_MEDICATION):
-            medInd = _get_annotation_for_attribute(attr, acd_medicationInds)
-            cui = medInd.cui
+    source_loc_map = (
+        nlp_config.acd_attribute_source_map
+        if nlp_config.acd_attribute_source_map
+        else RELEVANT_ANNOTATIONS_CDP
+    )
 
-            if cui not in med_statement_tracker:
-                med_statement_tracker[cui] = TrackerEntry(
+    for cui_source in get_attribute_sources(
+        acd_output, MedicationStatement, source_loc_map
+    ):
+        if cui_source.sources:
+            # first available source is the best one
+            source: AttrSourceConcept = next(iter(cui_source.sources.values()))
+
+            # only know how to handle the medication annotation at this time
+            if not isinstance(source, acd.MedicationAnnotation):
+                raise NotImplementedError(
+                    "Only support MedicationAnnotation CUI source at this time"
+                )
+
+            med_ind: acd.MedicationAnnotation = cast(acd.MedicationAnnotation, source)
+
+            if med_ind.cui not in med_statement_tracker:
+                med_statement_tracker[med_ind.cui] = TrackerEntry(
                     fhir_resource=_create_minimum_medication_statement(
-                        text_source.source_resource.subject, medInd
+                        text_source.source_resource.subject, med_ind
                     ),
                     id_maker=insight_id_maker(start=nlp_config.insight_id_start),
                 )
 
-            med_statement, id_maker = med_statement_tracker[cui]
+            med_statement, id_maker = med_statement_tracker[med_ind.cui]
 
             _add_insight_to_medication_statement(
                 text_source,
                 med_statement,
-                attr,
-                medInd,
+                cui_source.attr,
+                med_ind,
                 acd_output,
                 next(id_maker),
                 nlp_config,
+            )
+        else:
+            logger.info(
+                "Did not add codings because the attribute did not have an associated medication annotation %s",
+                cui_source,
             )
 
     if not med_statement_tracker:
@@ -145,7 +164,7 @@ def _add_insight_to_medication_statement(  # pylint: disable=too-many-arguments
     text_source: UnstructuredText,
     med_statement: MedicationStatement,
     attr: acd.AttributeValueAnnotation,
-    medInd: acd.MedicationAnnotation,
+    med_ind: acd.MedicationAnnotation,
     acd_output: acd.ContainerAnnotation,
     insight_id_string: str,
     nlp_config: NlpConfig,
@@ -178,7 +197,7 @@ def _add_insight_to_medication_statement(  # pylint: disable=too-many-arguments
 
     add_insight_to_meta(med_statement, insight_id_ext, unstructured_insight_detail)
 
-    _update_codings_and_administration_info(med_statement, medInd)
+    _update_codings_and_administration_info(med_statement, med_ind)
 
 
 def _create_minimum_medication_statement(

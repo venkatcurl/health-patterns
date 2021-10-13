@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utilities for building and manipulating FHIR objects"""
-
-
 from collections import defaultdict
 import json  # noqa: F401 pylint: disable=unused-import
 from typing import DefaultDict
@@ -25,7 +23,6 @@ from typing import Set
 from fhir.resources.attachment import Attachment
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.coding import Coding
-
 from fhir.resources.diagnosticreport import (  # noqa: F401 pylint: disable=unused-import
     DiagnosticReport,
 )
@@ -111,7 +108,7 @@ def get_derived_by_nlp_extension(element: Element) -> Optional[Extension]:
 
 def append_coding(
     codeable_concept: CodeableConcept, system: str, code: str, display: str = None
-) -> None:
+) -> bool:
     """Append the coding to the codebale concept, if the coding does not exist
 
     This method will not append a new coding if the coding exists, even if the
@@ -125,6 +122,7 @@ def append_coding(
      ...               'http://example_system',
      ...               'Code_12345',
      ...               'example display string')
+     True
      >>> print(concept.json(indent=2))
      {
        "coding": [
@@ -143,6 +141,9 @@ def append_coding(
     if not existing_codings:
         new_coding = create_coding(system, code, display, derived_by_nlp=False)
         codeable_concept.coding.append(new_coding)
+        return True
+
+    return False
 
 
 def append_derived_by_nlp_coding(
