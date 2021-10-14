@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Functions to update codeable concepts with derived codings"""
 
 import logging
 from typing import Generator
@@ -32,7 +33,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import
     get_attribute_sources,
     AttrSourceConcept,
 )
-from text_analytics.nlp.acd.fhir_enrichment.insights.cdp_attribute_source_info import (
+from text_analytics.nlp.acd.flows.cdp_attribute_source_info import (
     RELEVANT_ANNOTATIONS_CDP,
 )
 from text_analytics.nlp.nlp_config import NlpConfig

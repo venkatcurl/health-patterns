@@ -41,7 +41,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts im
     update_codeable_concepts_and_meta_with_insights,
     AcdConceptRef,
 )
-from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG_STANDARD_V1_0
 
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class ACDService(NLPService):
         self.acd_key = config["config"]["apikey"]
         self.acd_url = config["config"]["endpoint"]
         self.acd_flow = config["config"]["flow"]
-        self.nlp_config = ACD_NLP_CONFIG
+        self.nlp_config = ACD_NLP_CONFIG_STANDARD_V1_0
         if config.get("version"):
             self.version = config.get("version")
         else:

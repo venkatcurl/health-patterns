@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Attributes and source locations for CDP pipeline"""
+"""Attributes and source locations for IBM CDP Flow
 
-from fhir.resources.allergyintolerance import AllergyIntolerance
+   The ACD flow generating these attributes is internal to IBM, however the
+   output format is used by many tests
+"""
+
 from fhir.resources.condition import Condition
-from fhir.resources.immunization import Immunization
 from fhir.resources.medicationstatement import MedicationStatement
 
 from text_analytics.insight_source.fields_of_interest import CodeableConceptRefType
@@ -52,9 +54,7 @@ CDP_ANNOTATION_TYPE_MEDICATION = [
 
 
 RELEVANT_ANNOTATIONS_CDP: AttributeNameAndSourceMap = {
-    AllergyIntolerance: CDP_ANNOTATION_TYPE_ALLERGY,
     Condition: CDP_ANNOTATION_TYPE_CONDITION,
-    Immunization: CDP_ANNOTATION_TYPE_IMMUNIZATION,
     MedicationStatement: CDP_ANNOTATION_TYPE_MEDICATION,
     CodeableConceptRefType.ALLERGEN: CDP_ANNOTATION_TYPE_ALLERGY,
     CodeableConceptRefType.MANIFESTATION: CDP_ANNOTATION_TYPE_ALLERGY,

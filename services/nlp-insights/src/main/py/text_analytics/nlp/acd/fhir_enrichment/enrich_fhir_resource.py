@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Methods to enrich a FHIR resource
 
+   These are provided for non-REST interfaces
+"""
 from typing import List
 from typing import Optional
 

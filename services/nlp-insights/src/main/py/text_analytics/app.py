@@ -347,8 +347,7 @@ def discover_insights() -> Response:
 
     if not isinstance(fhir_resource, Bundle):
         if not bundle.entry and not (
-            isinstance(fhir_resource, DiagnosticReport)
-            or isinstance(fhir_resource, DocumentReference)
+            isinstance(fhir_resource, (DiagnosticReport, DocumentReference))
         ):
             # Nothing changed, return original resource, except for types that
             # are considered "unstructured, those should be empty bundle"

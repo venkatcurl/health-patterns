@@ -15,7 +15,6 @@
 from dataclasses import dataclass
 from typing import Any
 from typing import Callable
-from typing import Generator
 from typing import Optional
 
 from fhir.resources.extension import Extension
@@ -29,8 +28,12 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import
     AttributeNameAndSourceMap,
 )
 
-from text_analytics.nlp.acd.fhir_enrichment.insights.cdp_attribute_source_info import (
+from text_analytics.nlp.acd.flows.cdp_attribute_source_info import (
     RELEVANT_ANNOTATIONS_CDP,
+)
+
+from text_analytics.nlp.acd.flows.default_attribute_source_info import (
+    RELEVANT_ANNOTATIONS_STANDARD_V1_0,
 )
 
 
@@ -68,6 +71,13 @@ ACD_NLP_CONFIG = NlpConfig(
     nlp_system="urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0",
     get_nlp_output_loc=acd_get_nlp_output_loc,
     acd_attribute_source_map=RELEVANT_ANNOTATIONS_CDP,
+)
+
+
+ACD_NLP_CONFIG_STANDARD_V1_0 = NlpConfig(
+    nlp_system="urn:id:COM.IBM.WH.PA.INTEGRATION/1.0.0",
+    get_nlp_output_loc=acd_get_nlp_output_loc,
+    acd_attribute_source_map=RELEVANT_ANNOTATIONS_STANDARD_V1_0,
 )
 
 

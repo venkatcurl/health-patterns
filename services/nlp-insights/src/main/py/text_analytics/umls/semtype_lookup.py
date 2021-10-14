@@ -25,14 +25,15 @@
 
 from typing import Dict
 from typing import Iterable
+from typing import List
 from typing import Set
 from typing import Type
 from typing import TypeVar
 
 from fhir.resources.condition import Condition
 from fhir.resources.medicationstatement import MedicationStatement
-
 from fhir.resources.resource import Resource
+
 from text_analytics.insight_source.fields_of_interest import CodeableConceptRefType
 
 
@@ -167,48 +168,46 @@ _type_id_to_type_name = {
 }
 
 
-_CONDITION_TYPES = set(
-    [
-        "ICDiagnosis",
-        "umls.DiseaseOrSyndrome",
-        "umls.PathologicFunction",
-        "umls.SignOrSymptom",
-        "umls.NeoplasticProcess",
-        "umls.CellOrMolecularDysfunction",
-        "umls.MentalOrBehavioralDysfunction",
-    ]
-)
+CONDITION_TYPES = [
+    "ICDiagnosis",
+    "umls.DiseaseOrSyndrome",
+    "umls.PathologicFunction",
+    "umls.SignOrSymptom",
+    "umls.NeoplasticProcess",
+    "umls.CellOrMolecularDysfunction",
+    "umls.MentalOrBehavioralDysfunction",
+]
 
 
-_MEDICATION_TYPES = set(
-    [
-        "umls.Antibiotic",
-        "umls.ClinicalDrug",
-        "umls.PharmacologicSubstance",
-        "umls.OrganicChemical",
-    ]
-)
+MEDICATION_TYPES = [
+    "umls.Antibiotic",
+    "umls.ClinicalDrug",
+    "umls.PharmacologicSubstance",
+    "umls.OrganicChemical",
+]
 
 
-_VACCINE_TYPES = set(["ICMedication", "umls.ImmunologicFactor"])
+VACCINE_TYPES = ["ICMedication", "umls.ImmunologicFactor"]
 
 
-_ALLERGEN_TYPES = set(
-    ["umls.DiseaseOrSyndrome", "umls.PathologicFunction", "umls.SignOrSymptom"]
-)
+ALLERGEN_TYPES = [
+    "umls.DiseaseOrSyndrome",
+    "umls.PathologicFunction",
+    "umls.SignOrSymptom",
+]
 
 
-_resource_type_to_type_names: Dict[str, Set[str]] = {
-    Condition.__name__: _CONDITION_TYPES,
-    MedicationStatement.__name__: _MEDICATION_TYPES,
+_resource_type_to_type_names: Dict[str, List[str]] = {
+    Condition.__name__: CONDITION_TYPES,
+    MedicationStatement.__name__: MEDICATION_TYPES,
 }
 
 
-_concept_type_to_type_names: Dict[CodeableConceptRefType, Set[str]] = {
-    CodeableConceptRefType.ALLERGEN: _ALLERGEN_TYPES,
-    CodeableConceptRefType.CONDITION: _CONDITION_TYPES,
-    CodeableConceptRefType.MANIFESTATION: set(),
-    CodeableConceptRefType.VACCINE: _VACCINE_TYPES,
+_concept_type_to_type_names: Dict[CodeableConceptRefType, List[str]] = {
+    CodeableConceptRefType.ALLERGEN: ALLERGEN_TYPES,
+    CodeableConceptRefType.CONDITION: CONDITION_TYPES,
+    CodeableConceptRefType.MANIFESTATION: [],
+    CodeableConceptRefType.VACCINE: VACCINE_TYPES,
 }
 
 

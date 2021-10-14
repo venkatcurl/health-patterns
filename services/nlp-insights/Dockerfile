@@ -9,7 +9,7 @@ COPY setup.properties setup.properties
 
 RUN pip3 install -r pinned.txt
 
-COPY /src/main/py .
+COPY src/main/py .
 
 RUN pip3 install .
 

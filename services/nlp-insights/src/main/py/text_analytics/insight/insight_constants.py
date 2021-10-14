@@ -38,7 +38,7 @@ INSIGHT_CONFIDENCE_URL = "http://ibm.com/fhir/cdm/StructureDefinition/insight-co
 INSIGHT_CONFIDENCE_SCORE_URL = "http://ibm.com/fhir/cdm/StructureDefinition/score"  # confidence score for the insight
 INSIGHT_CONFIDENCE_NAME_URL = "http://ibm.com/fhir/cdm/StructureDefinition/description"  # name of the specific confidence score
 
-# FIXME: The valus above appear to have been changed in future releases
+# FIXME: The values above appear to have been changed in future releases
 # INSIGHT_RESULT_URL = "http://ibm.com/fhir/cdm/insight/result"                      # insight top level
 # INSIGHT_BASED_ON_URL = "http://ibm.com/fhir/cdm/insight/basedOn"                   # link to the unstructured report
 # INSIGHT_INSIGHT_ENTRY_URL = "http://ibm.com/fhir/cdm/insight/insight-entry"        # a derived insight (general, complex extension)

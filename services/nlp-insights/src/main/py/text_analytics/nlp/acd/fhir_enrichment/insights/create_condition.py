@@ -51,7 +51,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import
     get_attribute_sources,
     AttrSourceConcept,
 )
-from text_analytics.nlp.acd.fhir_enrichment.insights.cdp_attribute_source_info import (
+from text_analytics.nlp.acd.flows.cdp_attribute_source_info import (
     RELEVANT_ANNOTATIONS_CDP,
 )
 from text_analytics.nlp.nlp_config import NlpConfig
@@ -202,6 +202,11 @@ def _add_insight_codings_to_condition(
 def get_diagnosis_confidences(
     insight_model_data: InsightModelData,
 ) -> Optional[List[Extension]]:
+    """Returns confidences for a diagnosis
+
+    Args: insight_model_data - model data from the attribute's concept
+    Returns: a list of extensions, or none if confidences could not be computed.
+    """
     if not insight_model_data:
         return None
 

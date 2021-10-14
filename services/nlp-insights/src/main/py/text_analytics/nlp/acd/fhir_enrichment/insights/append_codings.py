@@ -14,13 +14,23 @@
 
 """Functions to append codings that appear in an ACD style CUI"""
 
+import logging
+from typing import Optional
+from typing import cast
+
 from fhir.resources.codeableconcept import CodeableConcept
+from ibm_whcs_sdk.annotator_for_clinical_data import (
+    annotator_for_clinical_data_v1 as acd,
+)
 
 from text_analytics.fhir import fhir_object_utils
 from text_analytics.insight import insight_constants
 from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import (
     AttrSourceConcept,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _append_coding_entries_with_extension(
@@ -47,7 +57,10 @@ def _append_coding_entries_with_extension(
 
 
 def _append_coding_entries(
-    codeable_concept: CodeableConcept, system: str, csv_ids: str, display: str = None
+    codeable_concept: CodeableConcept,
+    system: str,
+    csv_code_id: str,
+    display: str = None,
 ) -> int:
     """Appends multiple codings when the id may be a csv list of codes
 
@@ -57,19 +70,19 @@ def _append_coding_entries(
     Args:
         codeable_concept - concept to add code to
         system - system for the code
-        id - and id for csv of ids to add codings for
+        csv_code_id - an id for csv of ids to add codings
     """
     codes_added: int = 0
-    for code_id in csv_ids.split(","):
+    for code_id in csv_code_id.split(","):
         codes_added += fhir_object_utils.append_coding(
             codeable_concept, system, code_id, display
         )
     return codes_added
 
 
-def get_concept_display_text(concept: AttrSourceConcept):
+def get_concept_display_text(concept: AttrSourceConcept) -> Optional[str]:
     """Retrieve display text for concept"""
-    display_text: str = None
+    display_text: Optional[str] = None
     if hasattr(concept, "preferred_name") and concept.preferred_name:
         display_text = concept.preferred_name
     elif (
@@ -77,11 +90,24 @@ def get_concept_display_text(concept: AttrSourceConcept):
         and concept.symptom_disease_normalized_name
     ):
         display_text = concept.symptom_disease_normalized_name
+    elif isinstance(concept, acd.MedicationAnnotation):
+        ann = cast(acd.MedicationAnnotation, concept)
+        if (
+            ann.drug
+            and "name1" in ann.drug[0]
+            and ann.drug[0]["name1"]
+            and "drugNormalizedName" in ann.drug[0]["name1"]
+        ):
+            display_text = ann.drug[0].get("name1")[0]["drugNormalizedName"]
+
+    logger.debug("display text for concept is %s", display_text)
     return display_text
 
 
 def append_codings(
-    concept: AttrSourceConcept, codeable_concept: CodeableConcept, add_nlp_extension
+    concept: AttrSourceConcept,
+    codeable_concept: CodeableConcept,
+    add_nlp_extension: bool,
 ) -> int:
     """
      Adds codes from the concept to the codeable_concept.
