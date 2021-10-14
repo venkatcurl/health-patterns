@@ -35,7 +35,7 @@ from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     create_new_resources_from_insights,
     create_conditions_from_insights,
 )
-from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG_CDP_V1_0
 
 
 class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
@@ -65,7 +65,9 @@ class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
                 source_resource=input_report,
                 fhir_path="DiagnosticReport.presentedForm[0].data",
                 text=input_report.presentedForm[0].data,
-            ), acd_output, ACD_NLP_CONFIG
+            ),
+            acd_output,
+            ACD_NLP_CONFIG_CDP_V1_0,
         )
 
         self.assertTrue(
@@ -246,7 +248,7 @@ class TestCreateConditionFromInsights(UnitTestUsingExternalResource):
         ) as f:
             acd_output = ContainerAnnotation.from_dict(json.loads(f.read()))
         actual_results = create_conditions_from_insights(
-            input_diagnostic_report, acd_output, ACD_NLP_CONFIG
+            input_diagnostic_report, acd_output, ACD_NLP_CONFIG_CDP_V1_0
         )
         self.assertEqual(
             actual_results,

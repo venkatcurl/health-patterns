@@ -37,7 +37,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts im
     AcdConceptRef,
 )
 
-from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG_CDP_V1_0
 
 
 class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
@@ -68,7 +68,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
         ]
 
         update_codeable_concepts_and_meta_with_insights(
-            immunization, ai_results, ACD_NLP_CONFIG
+            immunization, ai_results, ACD_NLP_CONFIG_CDP_V1_0
         )
 
         differences = DeepDiff(
@@ -134,7 +134,7 @@ class enhance_immunization_with_insights_test(UnitTestUsingExternalResource):
         ]
 
         num_updates = update_codeable_concepts_and_meta_with_insights(
-            immunization, ai_results, ACD_NLP_CONFIG
+            immunization, ai_results, ACD_NLP_CONFIG_CDP_V1_0
         )
         self.assertEqual(0, num_updates, "Did not expect results, but some returned")
 

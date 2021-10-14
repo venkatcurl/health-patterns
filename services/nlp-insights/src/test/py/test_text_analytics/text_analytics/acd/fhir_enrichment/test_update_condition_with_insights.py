@@ -36,7 +36,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts im
     AcdConceptRef,
 )
 
-from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG_CDP_V1_0
 
 
 # Note: Not testing path where existing condition resource does not produce insights as this is common code with allergy and immunization
@@ -68,7 +68,7 @@ class EnhanceConditionWithInsightsTest(UnitTestUsingExternalResource):
         ]
 
         update_codeable_concepts_and_meta_with_insights(
-            condition, ai_results, ACD_NLP_CONFIG
+            condition, ai_results, ACD_NLP_CONFIG_CDP_V1_0
         )
 
         differences = DeepDiff(

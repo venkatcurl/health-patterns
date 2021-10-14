@@ -37,7 +37,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts im
     AcdConceptRef,
 )
 
-from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG_CDP_V1_0
 
 
 class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
@@ -45,7 +45,7 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
         self, allergy, expected_allergy, ai_results, full_output
     ):
         num_updates = update_codeable_concepts_and_meta_with_insights(
-            allergy, ai_results, ACD_NLP_CONFIG
+            allergy, ai_results, ACD_NLP_CONFIG_CDP_V1_0
         )
 
         if expected_allergy is None:
@@ -318,7 +318,9 @@ class EnhanceAllergyWithInsightsTest(UnitTestUsingExternalResource):
                         )
                 elif "RASH" in mf.text:
                     with open(
-                        self.resource_path + "/acd/mock_acd_output/rash.json", "r", encoding="utf-8"
+                        self.resource_path + "/acd/mock_acd_output/rash.json",
+                        "r",
+                        encoding="utf-8",
                     ) as f:
                         acd_result_rash = ContainerAnnotation.from_dict(
                             json.loads(f.read())

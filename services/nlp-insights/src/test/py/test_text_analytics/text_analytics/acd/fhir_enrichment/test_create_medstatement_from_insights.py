@@ -34,7 +34,7 @@ from text_analytics.nlp.acd.fhir_enrichment.enrich_fhir_resource import (
     create_new_resources_from_insights,
     create_med_statements_from_insights,
 )
-from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG_CDP_V1_0
 
 
 class CreateMedStatementFromInsightTest(UnitTestUsingExternalResource):
@@ -58,7 +58,7 @@ class CreateMedStatementFromInsightTest(UnitTestUsingExternalResource):
                 text=input_diagnostic_report.presentedForm[0].data,
             ),
             acd_output,
-            ACD_NLP_CONFIG,
+            ACD_NLP_CONFIG_CDP_V1_0,
         )
 
         self.assertIsNotNone(actual_results)
@@ -225,7 +225,7 @@ class CreateMedStatementFromInsightTest(UnitTestUsingExternalResource):
         ) as f:
             acd_output = ContainerAnnotation.from_dict(json.loads(f.read()))
         actual_results = create_med_statements_from_insights(
-            input_diagnostic_report, acd_output, ACD_NLP_CONFIG
+            input_diagnostic_report, acd_output, ACD_NLP_CONFIG_CDP_V1_0
         )
         self.assertEqual(actual_results, None, "Expected no results but got something")
 

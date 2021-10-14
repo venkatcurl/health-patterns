@@ -35,7 +35,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts im
     AcdConceptRef,
 )
 
-from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import ACD_NLP_CONFIG_CDP_V1_0
 
 
 class update_general_test(UnitTestUsingExternalResource):
@@ -66,7 +66,7 @@ class update_general_test(UnitTestUsingExternalResource):
         ]
 
         update_codeable_concepts_and_meta_with_insights(
-            immunization, acd_results, ACD_NLP_CONFIG
+            immunization, acd_results, ACD_NLP_CONFIG_CDP_V1_0
         )
         actual_results_dict = immunization.dict()
         blank_acd_evidence_detail_in_resource(actual_results_dict)
