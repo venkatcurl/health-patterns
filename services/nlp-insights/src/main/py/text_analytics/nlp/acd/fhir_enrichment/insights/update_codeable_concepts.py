@@ -33,9 +33,7 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import
     get_attribute_sources,
     AttrSourceConcept,
 )
-from text_analytics.nlp.acd.flows.cdp_attribute_source_info import (
-    RELEVANT_ANNOTATIONS_CDP,
-)
+
 from text_analytics.nlp.nlp_config import NlpConfig
 
 
@@ -73,11 +71,7 @@ def _add_codeable_concept_insight(
     Returns: the number of codings added to the codeable concept.
     """
     concept_ref = insight.adjusted_concept.concept_ref
-    source_loc_map = (
-        nlp_config.acd_attribute_source_map
-        if nlp_config.acd_attribute_source_map
-        else RELEVANT_ANNOTATIONS_CDP
-    )
+    source_loc_map = nlp_config.get_valid_acd_attr_source_map()
 
     total_num_codes_added: int = 0
 

@@ -39,13 +39,13 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.update_codeable_concepts im
     update_codeable_concepts_and_meta_with_insights,
     AcdConceptRef,
 )
-from text_analytics.nlp.nlp_config import NlpConfig, ACD_NLP_CONFIG
+from text_analytics.nlp.nlp_config import NlpConfig, ACD_NLP_CONFIG_CDP_V1_0
 
 
 def enrich_resource_codeable_concepts(
     concept_insights: List[AcdConceptRef],
     fhir_resource: Resource,
-    nlp_config: NlpConfig = ACD_NLP_CONFIG,
+    nlp_config: NlpConfig = ACD_NLP_CONFIG_CDP_V1_0,
 ) -> Optional[Bundle]:
     """Creates a bundle containing the fhir resource that includes additional codeings
 
@@ -54,6 +54,7 @@ def enrich_resource_codeable_concepts(
                            and ACD/NLP analysis of those insights
         fhir_resource - the resource that contains the codeable concepts referenced by
                         the concept insights
+        nlp_config - config to use. The default is for CDP pipeline
 
     Returns: Bundle with single enriched resource, or None if the resource was not
              enriched
@@ -79,7 +80,7 @@ def enrich_resource_codeable_concepts(
 def create_new_resources_from_insights(
     text_source: UnstructuredText,
     insights: acd.ContainerAnnotation,
-    nlp_config: NlpConfig = ACD_NLP_CONFIG,
+    nlp_config: NlpConfig = ACD_NLP_CONFIG_CDP_V1_0,
 ) -> Optional[Bundle]:
     """Creates a bundle of new (derived) resources from ACD insights
 
@@ -91,7 +92,7 @@ def create_new_resources_from_insights(
     Args:
         source resource - the resource that caused the insights to be created
         insights - response from ACD for free text in the resource
-        nlp_config - nlp configuration
+        nlp_config - nlp configuration, the default is for the CDP pipeline
 
     Returns a bundle of derived resources, or None if no resources were derived
     """

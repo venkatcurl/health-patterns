@@ -58,6 +58,18 @@ class NlpConfig:
 
         return None
 
+    def get_valid_acd_attr_source_map(self) -> AttributeNameAndSourceMap:
+        """Returns the attribute source map
+
+        This option is only useful for ACD flows
+
+        Raises TypeError if the map is not defined.
+        """
+        if self.acd_attribute_source_map is not None:
+            return self.acd_attribute_source_map
+
+        raise TypeError("The acd_attribute_source_map is None")
+
 
 def acd_get_nlp_output_loc(nlp_output: acd.ContainerAnnotation) -> str:
     """Returns the location of ACD NLP output"""
@@ -67,7 +79,7 @@ def acd_get_nlp_output_loc(nlp_output: acd.ContainerAnnotation) -> str:
     return "uri://path/acd-123.json"
 
 
-ACD_NLP_CONFIG = NlpConfig(
+ACD_NLP_CONFIG_CDP_V1_0 = NlpConfig(
     nlp_system="urn:id:COM.IBM.WH.PA.CDP.CDE/1.0.0",
     get_nlp_output_loc=acd_get_nlp_output_loc,
     acd_attribute_source_map=RELEVANT_ANNOTATIONS_CDP,

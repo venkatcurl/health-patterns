@@ -54,13 +54,11 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import
     get_attribute_sources,
     AttrSourceConcept,
 )
-from text_analytics.nlp.acd.flows.cdp_attribute_source_info import (
-    RELEVANT_ANNOTATIONS_CDP,
-)
+
 from text_analytics.nlp.nlp_config import NlpConfig
 
 
-logger = logging.getLogger("whpa-cdp-lib-fhir-enrichment")
+logger = logging.getLogger(__name__)
 
 
 def create_med_statements_from_insights(
@@ -73,17 +71,14 @@ def create_med_statements_from_insights(
     Args:
         text_source - the resource that NLP was run over (must be unstructured)
         acd_output - the acd output
+        nlp_config - the configuration to use
 
     Returns medication statements derived from NLP, or None if there are no such statements
     """
+    source_loc_map = nlp_config.get_valid_acd_attr_source_map()
+
     TrackerEntry = namedtuple("TrackerEntry", ["fhir_resource", "id_maker"])
     med_statement_tracker = {}  # key is UMLS ID, value is TrackerEntry
-
-    source_loc_map = (
-        nlp_config.acd_attribute_source_map
-        if nlp_config.acd_attribute_source_map
-        else RELEVANT_ANNOTATIONS_CDP
-    )
 
     for cui_source in get_attribute_sources(
         acd_output, MedicationStatement, source_loc_map

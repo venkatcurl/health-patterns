@@ -51,9 +51,6 @@ from text_analytics.nlp.acd.fhir_enrichment.insights.attribute_source_cui import
     get_attribute_sources,
     AttrSourceConcept,
 )
-from text_analytics.nlp.acd.flows.cdp_attribute_source_info import (
-    RELEVANT_ANNOTATIONS_CDP,
-)
 from text_analytics.nlp.nlp_config import NlpConfig
 
 
@@ -71,14 +68,10 @@ def create_conditions_from_insights(
 
     Returns conditions derived by NLP, or None if there are no conditions
     """
-    # acd_attrs: List[acd.AttributeValueAnnotation] = acd_output.attribute_values
+    source_loc_map = nlp_config.get_valid_acd_attr_source_map()
+
     TrackerEntry = namedtuple("TrackerEntry", ["fhir_resource", "id_maker"])
     condition_tracker = {}  # key is UMLS ID, value is TrackerEntry
-    source_loc_map = (
-        nlp_config.acd_attribute_source_map
-        if nlp_config.acd_attribute_source_map
-        else RELEVANT_ANNOTATIONS_CDP
-    )
 
     for cui_source in get_attribute_sources(acd_output, Condition, source_loc_map):
         if cui_source.sources:
