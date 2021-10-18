@@ -54,6 +54,9 @@ app = Flask(__name__)
 # Maps values seen in configs to NLP python classes
 all_nlp_services = {"acd": ACDService, "quickumls": QuickUMLSService}
 # NLP Service currently configured
+# FIXME: Using a global to track the current NLP service is dangerous. It does not scale
+# when multiple processes or containers are used. It is not thread safe when multiple
+# requests to update the config are made in parallel.
 nlp_service = None
 # Stores instances of configured NLP Services
 nlp_services_dict: Dict[str, NLPService] = {}
