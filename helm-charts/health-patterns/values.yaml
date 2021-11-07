@@ -33,7 +33,7 @@ affinity: {}
 ingress:
   enabled: &ingressEnabled true
   class: &ingressClass public-iks-k8s-nginx
-  hostname: &hostname replace-me
+  hostname: &hostname team1-hack-wdc-kube
 
 ingestion:
   enabled: &ingestionEnabled true
@@ -44,7 +44,7 @@ enrichment:
 oidc:
   users: &oidc_users
     - identity: "replace-me@company.com"
-      name: "replace.me.no.spaces.or.caps"
+      name: "venkat_push_health"
   discovery:
     url: &oidc_discovery_url "replace-me"
   client: 
