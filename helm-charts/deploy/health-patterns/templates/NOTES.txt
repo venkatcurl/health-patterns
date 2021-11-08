@@ -1,0 +1,106 @@
+Welcome to the
+
+       d8888 888                                    d8b
+      d88888 888                                    Y8P
+     d88P888 888
+    d88P 888 888 888  888  .d88b.   8888b.  888d888 888  .d88b.
+   d88P  888 888 888  888 d8P  Y8b     "88b 888P"   888 d8P  Y8b
+  d88P   888 888 Y88  88P 88888888 .d888888 888     888 88888888
+ d8888888888 888  Y8bd8P  Y8b.     888  888 888     888 Y8b.
+d88P     888 888   Y88P    "Y8888  "Y888888 888     888  "Y8888
+
+                               Clinical Data Ingestion Framework
+
+Pattern: {{ .Values.pattern }}
+
+The following services have been deployed:
+{{- if .Values.fhir.enabled }}
+- Primary FHIR Server{{- if .Values.fhir.ingress.enabled }} --------- https://{{ .Values.fhir.ingress.hostname}}/{{ .Values.fhir.name }}{{- end }}
+{{- if .Values.fhir.proxy.enabled }}
+- Primary FHIR Server Proxy {{- if .Values.fhir.proxy.ingress.enabled }} --- https://{{ .Values.fhir.proxy.ingress.hostname}}/{{ .Values.fhir.proxy.name }}{{- end }}
+{{- end }}
+{{- end }}
+{{- if index .Values "fhir-deid" "enabled" }}
+- Secondary FHIR Server{{- if index .Values "fhir-deid" "ingress" "enabled" }} ------- https://{{ index .Values "fhir-deid" "ingress" "hostname" }}/{{ index .Values "fhir-deid" "name" }}{{- end }}
+{{- if index .Values "fhir-deid" "proxy" "enabled" }}
+- Secondary FHIR Server Proxy {{- if index .Values "fhir-deid" "proxy" "ingress" "enabled" }} - https://{{ index .Values "fhir-deid" "proxy" "ingress" "hostname" }}/{{ index .Values "fhir-deid" "proxy" "name" }}{{- end }}
+{{- end }}
+{{- end }}
+{{- if .Values.deid.enabled }}
+- De-Identification Service{{- if .Values.deid.ingress.enabled }} --- https://{{ .Values.deid.ingress.hostname}}/deid/api/v1/{{- end }}
+{{- end }}
+{{- if .Values.nifi.enabled }}
+- NiFi Server{{- if .Values.ingress.enabled }} ----------------- https://{{ .Values.nifi.ingress.hostname}}/nifi{{- end }}
+{{- end }}
+{{- if .Values.nifi2.enabled }}
+- NiFi Server{{- if .Values.ingress.enabled }} ----------------- https://{{ .Values.nifi2.ingress.hostname}}/nifi{{- end }}
+{{- end }}
+{{- if index .Values "nifi-registry" "enabled" }}
+- NiFi Registry{{- if index .Values "nifi-registry" "ingress" "enabled" }} --------------- https://{{ index .Values "nifi-registry" "ingress" "hostname"}}/nifi-registry{{- end }}
+{{- end }}
+{{- if index .Values "cohort-service" "enabled" }}
+- Cohort Service{{- if index .Values "cohort-service" "ingress" "enabled" }} -------------- https://{{ index .Values "cohort-service" "ingress" "hostname"}}/cohort-service{{- end }}
+{{- end }}
+{{- if index .Values "deid-prep" "enabled" }}
+- Deid Prep{{- if index .Values "deid-prep" "ingress" "enabled" }} -------------- https://{{ index .Values "deid-prep" "ingress" "hostname"}}/deid-prep{{- end }}
+{{- end }}
+{{- if index .Values "term-services-prep" "enabled" }}
+- Terminology Services Prep{{- if index .Values "term-services-prep" "ingress" "enabled" }} --- https://{{ index .Values "term-services-prep" "ingress" "hostname"}}/term-services-prep{{- end }}
+{{- end }}
+{{- if index .Values "nlp-insights" "enabled" }}
+- NLP Insights{{- if index .Values "nlp-insights" "ingress" "enabled" }} ---------------- https://{{ index .Values "nlp-insights" "ingress" "hostname"}}/nlp-insights{{- end }}
+{{- end }}
+{{- if .Values.kafka.enabled }}
+- Expose Kafka Service{{- if index .Values "expose-kafka" "ingress" "enabled" }} -------- https://{{ index .Values "expose-kafka" "ingress" "hostname"}}/expose-kafka{{- end }}
+- Kafka
+{{- end }}
+{{- if .Values.zookeeper.enabled }}
+- Zookeeper
+{{- end }}
+{{- if index .Values "kube-prometheus-stack" "enabled" }}
+- Prometheus
+- Grafana{{- if index .Values "kube-prometheus-stack" "ingress" "enabled" }} --------------------- https://{{ index .Values "kube-prometheus-stack" "ingress" "hostname"}}/grafana{{- end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+{{- if .Values.kafka.enabled }}
+
+
+To access the deployed pipeline, use the Expose Kafka service to read from and send to the kafka service the pipeline uses.  See documentation on use of Expose Kafka here: https://github.com/Alvearie/health-patterns/tree/main/services/expose-kafka#operations 
+
+
+{{- end }}
+{{- end }}
+
+Inside the cluster you can access the services at the following locations:
+
+{{- if .Values.fhir.enabled }}
+- Primary FHIR Server: {{ .Release.Name }}-fhir.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if index .Values "fhir-deid" "enabled" }}
+- Secondary FHIR Server: {{ .Release.Name }}-fhir-deid.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if .Values.deid.enabled }}
+- De-Identification Service: {{ .Release.Name }}-deid.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if .Values.nifi.enabled }}
+- NiFi Server: {{ .Release.Name }}-nifi.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if .Values.nifi2.enabled }}
+- NiFi Server: headless-nifi.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if index .Values "nifi-registry" "enabled" }}
+- NiFi Registry: {{ .Release.Name }}-nifi-registry.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if .Values.kafka.enabled }}
+- Kafka: {{ .Release.Name }}-kafka.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if .Values.zookeeper.enabled }}
+- Zookeeper: {{ .Release.Name }}-zookeeper.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if index .Values "kube-prometheus-stack" "enabled" }}
+- Grafana: {{ .Release.Name }}-grafana.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}
+{{- if index .Values "cohort-service" "enabled" }}
+- Cohort Service: {{ .Release.Name }}-cohort-service.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain}}
+{{- end }}

@@ -1,0 +1,25 @@
+# A simple name describing the Alvearie pattern implemented by this Helm values file
+pattern: "Chart Test"
+
+expose-kafka:
+  ingress:
+    enabled: true
+
+fhir:
+  ingress:
+    enabled: true
+  proxy:
+    enabled: true
+
+fhir-deid:
+  ingress:
+    enabled: true
+
+cohort-service:
+  enabled: true
+  ingress:
+    enabled: true
+
+hl7-resource-generator:
+  ingress:
+    enabled: true
